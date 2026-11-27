@@ -428,8 +428,17 @@ def home():
 @login_required
 def sales():
     sync_cloud_to_local()   # pull Supabase → local SQLite first
-    dfrom  = request.args.get("from",  (date.today()-timedelta(days=6)).isoformat())
-    dto    = request.args.get("to",    date.today().isoformat())
+    today       = date.today().isoformat()
+    yest        = (date.today()-timedelta(days=1)).isoformat()
+    week_start  = (date.today()-timedelta(days=6)).isoformat()
+    lweek_start = (date.today()-timedelta(days=13)).isoformat()
+    lweek_end   = (date.today()-timedelta(days=7)).isoformat()
+    month_start = date.today().replace(day=1).isoformat()
+    lmonth_end  = date.today().replace(day=1) - timedelta(days=1)
+    lmonth_start= lmonth_end.replace(day=1).isoformat()
+    lmonth_end  = lmonth_end.isoformat()
+    dfrom  = request.args.get("from",  week_start)
+    dto    = request.args.get("to",    today)
     stflt  = request.args.get("status","all")
     srch   = request.args.get("q","").strip().lower()
     sel_id = request.args.get("sel","")
@@ -472,6 +481,10 @@ def sales():
         stflt=stflt, srch=srch,
         total_rev=total_rev, total_prof=total_prof,
         sel_id=sel_id, sel_sale=sel_sale, sel_items=sel_items,
+        today=today, yest=yest, week_start=week_start,
+        lweek_start=lweek_start, lweek_end=lweek_end,
+        month_start=month_start,
+        lmonth_start=lmonth_start, lmonth_end=lmonth_end,
         fm=fm, cloud=cloud_status())
 
 
@@ -486,7 +499,12 @@ def reports():
     group       = request.args.get("group", "Daily")
     yest        = (date.today()-timedelta(days=1)).isoformat()
     week_start  = (date.today()-timedelta(days=6)).isoformat()
+    lweek_start = (date.today()-timedelta(days=13)).isoformat()
+    lweek_end   = (date.today()-timedelta(days=7)).isoformat()
     month_start = date.today().replace(day=1).isoformat()
+    _lme        = date.today().replace(day=1) - timedelta(days=1)
+    lmonth_start= _lme.replace(day=1).isoformat()
+    lmonth_end  = _lme.isoformat()
 
     psql = {"Daily":   "substr(s.sale_date,1,10)",
             "Weekly":  "date(substr(s.sale_date,1,10),'weekday 1','-6 days')",
@@ -584,6 +602,8 @@ def reports():
     return render_template("reports.html",
         today=today, dfrom=dfrom, dto=dto, group=group,
         yest=yest, week_start=week_start, month_start=month_start,
+        lweek_start=lweek_start, lweek_end=lweek_end,
+        lmonth_start=lmonth_start, lmonth_end=lmonth_end,
         kpis=kpis, margin=margin,
         vo_count=vo.get("c",0), vo_amount=fm(vo.get("a")),
         prows=prows, trend=trend, top=top, low_rows=low_rows,

@@ -18,13 +18,17 @@
     <button type="submit" class="btn btn-blue btn-sm">Apply</button>
     <!-- Preset links -->
     <a href="{{ url_for('reports',**{'from':today,'to':today,'group':'Daily'}) }}"
-       class="btn btn-grey btn-sm">Today</a>
+       class="btn btn-sm {{ 'btn-blue' if dfrom==today and dto==today else 'btn-grey' }}">Today</a>
     <a href="{{ url_for('reports',**{'from':yest,'to':yest,'group':'Daily'}) }}"
-       class="btn btn-grey btn-sm">Yesterday</a>
+       class="btn btn-sm {{ 'btn-blue' if dfrom==yest and dto==yest else 'btn-grey' }}">Yesterday</a>
     <a href="{{ url_for('reports',**{'from':week_start,'to':today,'group':'Daily'}) }}"
-       class="btn btn-grey btn-sm">Last 7 Days</a>
+       class="btn btn-sm {{ 'btn-blue' if dfrom==week_start and dto==today else 'btn-grey' }}">Last 7 Days</a>
+    <a href="{{ url_for('reports',**{'from':lweek_start,'to':lweek_end,'group':'Daily'}) }}"
+       class="btn btn-sm {{ 'btn-blue' if dfrom==lweek_start and dto==lweek_end else 'btn-grey' }}">Last Week</a>
     <a href="{{ url_for('reports',**{'from':month_start,'to':today,'group':'Weekly'}) }}"
-       class="btn btn-grey btn-sm">This Month</a>
+       class="btn btn-sm {{ 'btn-blue' if dfrom==month_start and dto==today else 'btn-grey' }}">This Month</a>
+    <a href="{{ url_for('reports',**{'from':lmonth_start,'to':lmonth_end,'group':'Weekly'}) }}"
+       class="btn btn-sm {{ 'btn-blue' if dfrom==lmonth_start and dto==lmonth_end else 'btn-grey' }}">Last Month</a>
     <span style="margin-left:auto;font-size:.78rem;color:var(--muted)">
       {{ '🟢 Cloud' if cloud=='online' else '🟡 Local' }}
     </span>
