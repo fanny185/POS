@@ -9,14 +9,26 @@
 import os, secrets as _secrets
 from pathlib import Path
 
-# Load .env file if it exists (local development / deployed EXE)
-_env_path = Path(__file__).parent / ".env"
-if _env_path.exists():
-    for _line in _env_path.read_text().splitlines():
-        _line = _line.strip()
-        if _line and not _line.startswith("#") and "=" in _line:
-            _k, _, _v = _line.partition("=")
-            os.environ.setdefault(_k.strip(), _v.strip())
+# Locate the .env file.
+# When running as a PyInstaller exe, __file__ is inside a temp folder,
+# so we also check next to the actual executable (sys.executable).
+import sys as _sys
+
+def _load_env():
+    candidates = [
+        Path(_sys.executable).parent / ".env",   # next to RetailPOS.exe  ← exe mode
+        Path(__file__).parent / ".env",           # next to config.py      ← dev mode
+    ]
+    for _env_path in candidates:
+        if _env_path.exists():
+            for _line in _env_path.read_text().splitlines():
+                _line = _line.strip()
+                if _line and not _line.startswith("#") and "=" in _line:
+                    _k, _, _v = _line.partition("=")
+                    os.environ.setdefault(_k.strip(), _v.strip())
+            return  # stop after first found
+
+_load_env()
 
 # ── Credentials (read from environment / .env) ────────────────────────────────
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
