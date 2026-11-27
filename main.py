@@ -1990,6 +1990,11 @@ def build_inventory(window):
         ):
             return
         cursor.execute("DELETE FROM products WHERE product_id = ?", (pid,))
+        # Track deletion so sync.py can remove it from Supabase
+        cursor.execute("""
+            INSERT OR REPLACE INTO deleted_products (product_id, deleted_at, synced)
+            VALUES (?, datetime('now'), 0)
+        """, (pid,))
         connection.commit()
         notify_products_changed()
         if _SYNC_AVAILABLE:

@@ -200,7 +200,10 @@ def sync_cloud_to_local():
         c = _conn()
 
         # ── products ──────────────────────────────────────────────────────
-        for p in _sb_all("products", {"select": "*"}):
+        sb_products = _sb_all("products", {"select": "*"})
+        sb_product_ids = {p["product_id"] for p in sb_products}
+
+        for p in sb_products:
             c.execute("""
                 INSERT INTO products
                     (product_id, product_name, quantity, selling_price,
@@ -217,6 +220,12 @@ def sync_cloud_to_local():
             """, (p["product_id"], p["product_name"], p["quantity"],
                   p["selling_price"], p.get("ordering_price"),
                   p.get("units_per_pack", 1)))
+
+        # Remove any local products that no longer exist in Supabase (deleted on shop PC)
+        local_ids = [r[0] for r in c.execute("SELECT product_id FROM products").fetchall()]
+        for lid in local_ids:
+            if lid not in sb_product_ids:
+                c.execute("DELETE FROM products WHERE product_id=?", (lid,))
 
         # ── sales ──────────────────────────────────────────────────────────
         for s in _sb_all("sales", {"select": "*", "order": "sale_id.asc"}):
@@ -798,6 +807,17 @@ def product_delete(pid):
         flash(f"Cannot delete '{name}' — it appears in past sales. Set its quantity to 0 instead.","error")
         return redirect(url_for("inventory"))
     run("DELETE FROM products WHERE product_id=?",(pid,))
+    # Also delete from Supabase immediately
+    try:
+        import requests as _req
+        _req.delete(
+            f"{_SUPABASE_URL}/rest/v1/products?product_id=eq.{pid}",
+            headers={"apikey": _SUPABASE_KEY,
+                     "Authorization": f"Bearer {_SUPABASE_KEY}"},
+            timeout=8
+        )
+    except Exception:
+        pass
     flash(f"✓ '{name}' deleted.","success")
     return redirect(url_for("inventory"))
 

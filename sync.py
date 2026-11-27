@@ -76,7 +76,7 @@ def _local_conn():
 
 
 def _ensure_sync_columns():
-    """Add synced=0 column to tables that need it (idempotent)."""
+    """Add synced=0 column to tables that need it, and create deleted_products table (idempotent)."""
     conn = _local_conn()
     cur  = conn.cursor()
     for table in ("products", "sales", "sale_items"):
@@ -86,6 +86,14 @@ def _ensure_sync_columns():
             cur.execute(
                 f"ALTER TABLE {table} ADD COLUMN synced INTEGER NOT NULL DEFAULT 0"
             )
+    # Track deleted product IDs so the sync can remove them from Supabase
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS deleted_products (
+            product_id INTEGER PRIMARY KEY,
+            deleted_at TEXT NOT NULL,
+            synced     INTEGER NOT NULL DEFAULT 0
+        )
+    """)
     conn.commit()
     conn.close()
 
@@ -100,6 +108,11 @@ def _count_pending():
             total += cur.fetchone()[0]
         except sqlite3.OperationalError:
             pass
+    try:
+        cur.execute("SELECT COUNT(*) FROM deleted_products WHERE synced = 0")
+        total += cur.fetchone()[0]
+    except sqlite3.OperationalError:
+        pass
     conn.close()
     return total
 
@@ -199,6 +212,31 @@ def _sync_once():
             )
             conn.commit()
             pushed += len(items)
+
+        # ---- deleted products ----
+        try:
+            cur.execute("""
+                SELECT product_id FROM deleted_products WHERE synced = 0
+            """)
+            deleted_ids = [r["product_id"] for r in cur.fetchall()]
+            for pid in deleted_ids:
+                try:
+                    requests.delete(
+                        f"{config.SUPABASE_URL}/rest/v1/products?product_id=eq.{pid}",
+                        headers={**_headers(), "Prefer": ""},
+                        timeout=10
+                    )
+                except Exception:
+                    pass
+            if deleted_ids:
+                cur.executemany(
+                    "UPDATE deleted_products SET synced=1 WHERE product_id=?",
+                    [(i,) for i in deleted_ids]
+                )
+                conn.commit()
+                pushed += len(deleted_ids)
+        except sqlite3.OperationalError:
+            pass  # table doesn't exist yet on older installs
 
         return pushed
 
