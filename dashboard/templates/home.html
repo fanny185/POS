@@ -137,7 +137,7 @@
             <td class="tr"><strong>{{ fm(r.total_amount) }}</strong></td>
           </tr>
           {% else %}
-          <tr><td colspan="4" class="tc" style="padding:18px;color:#9ca3af">No sales today yet</td></tr>
+          <tr><td colspan="4" class="tc" style="padding:18px;color:var(--muted)">No sales today yet</td></tr>
           {% endfor %}
           </tbody>
         </table>
@@ -164,7 +164,7 @@
             </td>
           </tr>
           {% else %}
-          <tr><td colspan="3" class="tc" style="padding:18px;color:#16a34a">All stocked up ✓</td></tr>
+          <tr><td colspan="3" class="tc" style="padding:18px;color:var(--green)">All stocked up ✓</td></tr>
           {% endfor %}
           </tbody>
         </table>

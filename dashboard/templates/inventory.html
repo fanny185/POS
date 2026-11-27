@@ -26,7 +26,7 @@
   <div class="kpi">
     <div class="kpi-bar" style="background:{{ '#d97706' if low_n else '#16a34a' }}"></div>
     <div class="kpi-head"><span class="kpi-icon">🟡</span><span class="kpi-lbl">Low Stock</span></div>
-    <div class="kpi-val" style="color:{{ '#d97706' if low_n else '#111827' }}">{{ low_n }}</div>
+    <div class="kpi-val" style="color:{{ '#d97706' if low_n else 'var(--text)' }}">{{ low_n }}</div>
     <div class="kpi-sub muted">≤ {{ LOW_STOCK }} units remaining</div>
   </div>
 
@@ -54,13 +54,13 @@
 </div>
 
 <!-- Colour legend -->
-<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;font-size:.8rem;color:#6b7280;align-items:center">
+<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px;font-size:.8rem;color:var(--muted);align-items:center">
   <span style="display:inline-flex;align-items:center;gap:4px">
-    <span style="width:14px;height:14px;background:#fff4cc;border:1px solid #d1d5db;border-radius:3px;display:inline-block"></span>
+    <span style="width:14px;height:14px;background:var(--row-low);border:1px solid var(--border);border-radius:3px;display:inline-block"></span>
     Yellow = low stock (≤ {{ LOW_STOCK }} units)
   </span>
   <span style="display:inline-flex;align-items:center;gap:4px">
-    <span style="width:14px;height:14px;background:#fde2e2;border:1px solid #d1d5db;border-radius:3px;display:inline-block"></span>
+    <span style="width:14px;height:14px;background:var(--row-out);border:1px solid var(--border);border-radius:3px;display:inline-block"></span>
     Pink = out of stock
   </span>
   <span class="red">Red text = selling below cost</span>
@@ -70,12 +70,7 @@
 <!-- Flash messages -->
 {% with msgs = get_flashed_messages(with_categories=true) %}
   {% for cat, msg in msgs %}
-  <div style="padding:10px 14px;border-radius:8px;margin-bottom:10px;font-size:.88rem;
-       background:{{ '#dcfce7' if cat=='success' else '#fee2e2' }};
-       color:{{ '#166534' if cat=='success' else '#991b1b' }};
-       border:1px solid {{ '#86efac' if cat=='success' else '#fca5a5' }}">
-    {{ msg }}
-  </div>
+  <div class="alert {{ 'alert-g' if cat=='success' else 'alert-r' }}">{{ msg }}</div>
   {% endfor %}
 {% endwith %}
 
@@ -85,7 +80,7 @@
 </div>
 
 <!-- Filter bar -->
-<form method="get" class="fbar" style="background:#f1f5f9;padding:9px 14px;border-radius:8px;border:1px solid #e5e7eb">
+<form method="get" class="fbar" style="background:var(--th-bg);padding:9px 14px;border-radius:8px;border:1px solid var(--border)">
   <label>🔍 Search</label>
   <input type="text" name="q" value="{{ srch }}" placeholder="Product name or ID" style="width:200px"/>
   <label>Filter</label>
@@ -97,7 +92,7 @@
   </select>
   <button type="submit" class="btn btn-blue btn-sm">Apply</button>
   <a href="{{ url_for('inventory') }}" class="btn btn-grey btn-sm">Clear</a>
-  <span style="margin-left:auto;font-size:.8rem;color:#9ca3af">
+  <span style="margin-left:auto;font-size:.8rem;color:var(--muted)">
     Showing {{ rows|length }} of {{ all_count }}
   </span>
 </form>
@@ -133,7 +128,7 @@
         <td class="mono">{{ r.product_id }}</td>
         <td><strong>{{ r.product_name }}</strong></td>
         <td class="tr">
-          <strong style="color:{{ '#dc2626' if is_out else ('#d97706' if is_low else '#111827') }}">
+          <strong style="color:{{ '#dc2626' if is_out else ('#d97706' if is_low else 'var(--text)') }}">
             {{ r.quantity }}
           </strong>
         </td>
@@ -161,7 +156,7 @@
                 onsubmit="return confirm('Delete {{ r.product_name }}? This cannot be undone.')">
             <button type="submit"
                     class="btn btn-sm"
-                    style="background:#fee2e2;color:#991b1b;margin:1px">
+                    style="background:var(--row-out);color:var(--red);margin:1px">
               🗑 Delete
             </button>
           </form>

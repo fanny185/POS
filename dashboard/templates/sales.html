@@ -47,7 +47,7 @@
       </thead>
       <tbody>
       {% if not rows %}
-        <tr><td colspan="8" class="tc" style="padding:28px;color:#9ca3af">No sales found for this period.</td></tr>
+        <tr><td colspan="8" class="tc" style="padding:28px;color:var(--muted)">No sales found for this period.</td></tr>
       {% endif %}
       {% for r in rows %}
       <tr class="{{ 'row-void' if r.status=='voided' else '' }}" style="cursor:pointer"
@@ -133,8 +133,8 @@
   </div>
 </div>
 {% else %}
-<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:9px;padding:20px;
-  text-align:center;color:#9ca3af;font-size:.88rem">
+<div style="background:var(--th-bg);border:1px solid var(--border);border-radius:9px;padding:20px;
+  text-align:center;color:var(--muted);font-size:.88rem">
   ← Click any sale row above to see its items here
 </div>
 {% endif %}

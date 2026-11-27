@@ -5,7 +5,7 @@
 <div class="h1">Sales Reports <small>{{ dfrom }} → {{ dto }}</small></div>
 
 <!-- Filter / preset bar -->
-<div style="background:#e8eaed;border-radius:8px;padding:10px 14px;margin-bottom:16px">
+<div style="background:var(--th-bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:16px">
   <form method="get" class="fbar" style="margin:0">
     <label>From</label><input type="date" name="from" value="{{ dfrom }}"/>
     <label>To</label>  <input type="date" name="to"   value="{{ dto }}"/>
@@ -25,7 +25,7 @@
        class="btn btn-grey btn-sm">Last 7 Days</a>
     <a href="{{ url_for('reports',**{'from':month_start,'to':today,'group':'Weekly'}) }}"
        class="btn btn-grey btn-sm">This Month</a>
-    <span style="margin-left:auto;font-size:.78rem;color:#9ca3af">
+    <span style="margin-left:auto;font-size:.78rem;color:var(--muted)">
       {{ '🟢 Cloud' if cloud=='online' else '🟡 Local' }}
     </span>
   </form>
@@ -97,12 +97,7 @@
 <!-- Flash messages -->
 {% with msgs = get_flashed_messages(with_categories=true) %}
   {% for cat, msg in msgs %}
-  <div style="padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:.88rem;
-       background:{{ '#dcfce7' if cat=='success' else '#fee2e2' }};
-       color:{{ '#166534' if cat=='success' else '#991b1b' }};
-       border:1px solid {{ '#86efac' if cat=='success' else '#fca5a5' }}">
-    {{ msg }}
-  </div>
+  <div class="alert {{ 'alert-g' if cat=='success' else 'alert-r' }}">{{ msg }}</div>
   {% endfor %}
 {% endwith %}
 
@@ -123,7 +118,7 @@
       </thead>
       <tbody>
       {% if not sales_rows %}
-        <tr><td colspan="9" class="tc" style="padding:24px;color:#9ca3af">
+        <tr><td colspan="9" class="tc" style="padding:24px;color:var(--muted)">
           No sales in this period.</td></tr>
       {% endif %}
       {% for r in sales_rows %}
@@ -144,11 +139,11 @@
           {% if r.status=='completed' %}
           <a href="{{ url_for('sale_reverse', sale_id=r.sale_id) }}"
              class="btn btn-sm"
-             style="background:#fef3c7;color:#92400e;margin:1px">↩ Reverse</a>
+             style="background:var(--row-low);color:var(--amber);margin:1px">↩ Reverse</a>
           {% endif %}
           <!-- Delete with stock option -->
           <button class="btn btn-sm"
-                  style="background:#fee2e2;color:#991b1b;margin:1px"
+                  style="background:var(--row-out);color:var(--red);margin:1px"
                   onclick="confirmDelete({{ r.sale_id }}, '{{ r.status }}', {{ r.total_amount }})">
             🗑 Delete
           </button>
@@ -164,7 +159,7 @@
 <div class="card" style="margin-top:16px">
   <div class="card-hdr"><h2>🗑 Delete All Sales in Date Range</h2></div>
   <div class="card-body">
-    <p style="color:#92400e;font-size:.88rem;margin-bottom:12px">
+    <p style="color:var(--amber);font-size:.88rem;margin-bottom:12px">
       ⚠ This permanently deletes all sales in the selected period. A backup is recommended first.
     </p>
     <form method="post" action="{{ url_for('sale_delete_range') }}"
@@ -183,7 +178,7 @@
         </label>
         <input type="text" name="confirm" placeholder="DELETE" style="width:120px"/>
         <button type="submit" class="btn btn-sm"
-                style="background:#dc2626;color:white">
+                style="background:var(--row-out);color:var(--red)">
           Delete {{ dfrom }} → {{ dto }}
         </button>
       </div>
@@ -230,7 +225,7 @@
       <span><span class="legend-swatch" style="background:#16a34a"></span>Profit</span>
     </div>
   {% else %}
-    <div class="tc" style="padding:40px;color:#9ca3af">No sales in this period.</div>
+    <div class="tc" style="padding:40px;color:var(--muted)">No sales in this period.</div>
   {% endif %}
 </div>
 </div>
@@ -240,7 +235,7 @@
 <div class="card">
   <div class="card-hdr">
     <h2>Profit by {{ group }}</h2>
-    <span style="font-size:.78rem;color:#9ca3af">Double-click a row for full product list</span>
+    <span style="font-size:.78rem;color:var(--muted)">Double-click a row for full product list</span>
   </div>
   <div class="tbl-wrap">
     <table>
@@ -251,7 +246,7 @@
       </thead>
       <tbody>
       {% if not prows %}
-        <tr><td colspan="7" class="tc" style="padding:24px;color:#9ca3af">No data for this period.</td></tr>
+        <tr><td colspan="7" class="tc" style="padding:24px;color:var(--muted)">No data for this period.</td></tr>
       {% endif %}
       {% for r in prows %}
       {% set is_loss = r.profit is not none and r.profit < 0 %}
@@ -264,7 +259,7 @@
           <strong>{{ fm(r.profit) if r.profit is not none else '—' }}</strong>
         </td>
         <td class="tr">{{ r.margin }}</td>
-        <td style="font-size:.8rem;color:#6b7280;max-width:240px;
+        <td style="font-size:.8rem;color:var(--muted);max-width:240px;
                    overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
           {{ r.products or '—' }}</td>
       </tr>
@@ -280,7 +275,7 @@
 <div class="card">
   <div class="card-hdr">
     <h2>Top 20 Products</h2>
-    <span style="font-size:.78rem;color:#9ca3af">ranked by units sold</span>
+    <span style="font-size:.78rem;color:var(--muted)">ranked by units sold</span>
   </div>
   <div class="tbl-wrap">
     <table>
@@ -291,7 +286,7 @@
       </thead>
       <tbody>
       {% if not top %}
-        <tr><td colspan="6" class="tc" style="padding:24px;color:#9ca3af">No sales data.</td></tr>
+        <tr><td colspan="6" class="tc" style="padding:24px;color:var(--muted)">No sales data.</td></tr>
       {% endif %}
       {% for r in top %}
       <tr>
