@@ -170,7 +170,7 @@ def sync_cloud_to_local():
         return
 
     global _sync_cache_ts
-    if time.time() - _sync_cache_ts < 15:
+    if time.time() - _sync_cache_ts < 5:
         return
 
     def _sb_all(table, params=None):
@@ -889,6 +889,21 @@ def api_refresh():
     return jsonify({"ok": True, "cloud": cloud_status(),
                     "time": datetime.now().strftime("%H:%M:%S")})
 
+
+# ── Startup sync ──────────────────────────────────────────────────────────────
+# Runs once after the first request so Render's ephemeral SQLite is populated
+# immediately without waiting for a user to navigate to each page.
+_startup_done = False
+
+@app.before_request
+def _before_request_sync():
+    global _startup_done
+    if not _startup_done:
+        _startup_done = True
+        try:
+            sync_cloud_to_local()
+        except Exception:
+            pass
 
 # ── Run ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
