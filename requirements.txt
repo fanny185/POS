@@ -1,0 +1,17 @@
+# ── RetailPOS  –  Python dependencies ──────────────────────────
+#
+# Install everything at once:
+#   pip install -r requirements.txt
+
+# Cloud sync (HTTP calls to Supabase REST API)
+requests>=2.31.0
+
+# Owner web dashboard
+flask>=3.0.0
+Werkzeug>=3.0.0
+
+# Production web server (used by Render/Railway deployment)
+gunicorn>=21.2.0
+
+# PyInstaller – builds the standalone .exe  (not needed at runtime)
+pyinstaller>=6.15.0

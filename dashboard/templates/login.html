@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>RetailPOS – Sign In</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#1f2937;
+     display:flex;align-items:center;justify-content:center;min-height:100vh}
+.box{background:white;border-radius:14px;padding:42px 46px;width:100%;
+     max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.logo{font-size:2rem;text-align:center;margin-bottom:6px}
+h1{font-size:1.4rem;font-weight:800;color:#111827;text-align:center;margin-bottom:4px}
+p{color:#6b7280;font-size:.9rem;text-align:center;margin-bottom:28px}
+label{display:block;font-size:.85rem;font-weight:600;color:#374151;margin-bottom:5px}
+input[type=password]{width:100%;padding:11px 14px;border:1px solid #d1d5db;
+  border-radius:8px;font-size:1rem;font-family:inherit;outline:none;
+  transition:border .15s}
+input[type=password]:focus{border-color:#2563eb;box-shadow:0 0 0 3px #dbeafe}
+.btn{display:block;width:100%;padding:12px;margin-top:18px;
+  background:#2563eb;color:white;border:none;border-radius:8px;
+  font-size:1rem;font-weight:700;cursor:pointer;transition:background .15s}
+.btn:hover{background:#1d4ed8}
+.err{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;
+  padding:10px 14px;border-radius:8px;font-size:.9rem;margin-bottom:14px}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="logo">📊</div>
+  <h1>RetailPOS</h1>
+  <p>Owner Dashboard — sign in to continue</p>
+  {% if error %}
+  <div class="err">{{ error }}</div>
+  {% endif %}
+  <form method="post">
+    <label for="pw">Password</label>
+    <input type="password" id="pw" name="password"
+           placeholder="Enter dashboard password" autofocus required/>
+    <button type="submit" class="btn">Sign In</button>
+  </form>
+</div>
+</body>
+</html>

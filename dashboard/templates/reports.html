@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+{% block title %}Reports – RetailPOS{% endblock %}
+{% block content %}
+
+<div class="h1">Sales Reports <small>{{ dfrom }} → {{ dto }}</small></div>
+
+<!-- Filter / preset bar -->
+<div style="background:#e8eaed;border-radius:8px;padding:10px 14px;margin-bottom:16px">
+  <form method="get" class="fbar" style="margin:0">
+    <label>From</label><input type="date" name="from" value="{{ dfrom }}"/>
+    <label>To</label>  <input type="date" name="to"   value="{{ dto }}"/>
+    <label>Group by</label>
+    <select name="group">
+      <option {{ 'selected' if group=='Daily'   }}>Daily</option>
+      <option {{ 'selected' if group=='Weekly'  }}>Weekly</option>
+      <option {{ 'selected' if group=='Monthly' }}>Monthly</option>
+    </select>
+    <button type="submit" class="btn btn-blue btn-sm">Apply</button>
+    <!-- Preset links -->
+    <a href="{{ url_for('reports',**{'from':today,'to':today,'group':'Daily'}) }}"
+       class="btn btn-grey btn-sm">Today</a>
+    <a href="{{ url_for('reports',**{'from':yest,'to':yest,'group':'Daily'}) }}"
+       class="btn btn-grey btn-sm">Yesterday</a>
+    <a href="{{ url_for('reports',**{'from':week_start,'to':today,'group':'Daily'}) }}"
+       class="btn btn-grey btn-sm">Last 7 Days</a>
+    <a href="{{ url_for('reports',**{'from':month_start,'to':today,'group':'Weekly'}) }}"
+       class="btn btn-grey btn-sm">This Month</a>
+    <span style="margin-left:auto;font-size:.78rem;color:#9ca3af">
+      {{ '🟢 Cloud' if cloud=='online' else '🟡 Local' }}
+    </span>
+  </form>
+</div>
+
+<!-- KPI cards -->
+<div class="kpi-row">
+
+  <div class="kpi">
+    <div class="kpi-bar" style="background:#2563eb"></div>
+    <div class="kpi-head"><span class="kpi-icon">💰</span><span class="kpi-lbl">Revenue</span></div>
+    <div class="kpi-val">{{ kpis.revenue.value }}</div>
+    <div class="kpi-sub {{ kpis.revenue.cls }}">{{ kpis.revenue.txt }}</div>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi-bar" style="background:{{ '#16a34a' if cur.profit>=0 else '#dc2626' }}"></div>
+    <div class="kpi-head"><span class="kpi-icon">📈</span><span class="kpi-lbl">Profit</span></div>
+    <div class="kpi-val {{ 'green' if cur.profit>=0 else 'red' }}">{{ kpis.profit.value }}</div>
+    <div class="kpi-sub {{ kpis.profit.cls }}">Margin {{ margin }}&nbsp;&nbsp;{{ kpis.profit.txt }}</div>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi-bar" style="background:#0ea5e9"></div>
+    <div class="kpi-head"><span class="kpi-icon">🧾</span><span class="kpi-lbl">Transactions</span></div>
+    <div class="kpi-val">{{ kpis.sales.value }}</div>
+    <div class="kpi-sub {{ kpis.sales.cls }}">{{ kpis.sales.txt }}</div>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi-bar" style="background:#7c3aed"></div>
+    <div class="kpi-head"><span class="kpi-icon">📐</span><span class="kpi-lbl">Avg Sale</span></div>
+    <div class="kpi-val">{{ kpis.average.value }}</div>
+    <div class="kpi-sub {{ kpis.average.cls }}">{{ kpis.average.txt }}</div>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi-bar" style="background:#0f766e"></div>
+    <div class="kpi-head"><span class="kpi-icon">📦</span><span class="kpi-lbl">Items Sold</span></div>
+    <div class="kpi-val">{{ kpis.items.value }}</div>
+    <div class="kpi-sub {{ kpis.items.cls }}">{{ kpis.items.txt }}</div>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi-bar" style="background:{{ '#d97706' if vo_count else '#6b7280' }}"></div>
+    <div class="kpi-head"><span class="kpi-icon">↩️</span><span class="kpi-lbl">Reversals</span></div>
+    <div class="kpi-val" style="color:{{ '#d97706' if vo_count else '#6b7280' }}">{{ vo_count }}</div>
+    <div class="kpi-sub muted">
+      {{ 'worth ' ~ vo_amount ~ ' — not in totals' if vo_count else 'none' }}
+    </div>
+  </div>
+
+</div>
+
+<!-- Tabs -->
+<div class="tabs">
+  <a class="tab on" onclick="showTab('sales',this)">Sales</a>
+  <a class="tab"    onclick="showTab('trend',this)">Trend</a>
+  <a class="tab"    onclick="showTab('profit',this)">Profit by Period</a>
+  <a class="tab"    onclick="showTab('top',this)">Top Products</a>
+  <a class="tab"    onclick="showTab('low',this)">Low Stock
+    {% if low_rows %}<span class="badge b-red" style="margin-left:4px">{{ low_rows|length }}</span>{% endif %}
+  </a>
+</div>
+
+<!-- ── SALES TAB ─────────────────────────────────────────── -->
+<div id="tab-sales">
+
+<!-- Flash messages -->
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% for cat, msg in msgs %}
+  <div style="padding:10px 14px;border-radius:8px;margin-bottom:12px;font-size:.88rem;
+       background:{{ '#dcfce7' if cat=='success' else '#fee2e2' }};
+       color:{{ '#166534' if cat=='success' else '#991b1b' }};
+       border:1px solid {{ '#86efac' if cat=='success' else '#fca5a5' }}">
+    {{ msg }}
+  </div>
+  {% endfor %}
+{% endwith %}
+
+<div class="card">
+  <div class="card-hdr">
+    <h2>Sales in period</h2>
+    <span class="badge {{ 'b-green' if cloud=='online' else 'b-amber' }}">
+      {{ '🟢 Cloud' if cloud=='online' else '🟡 Local' }}
+    </span>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Date</th><th>Time</th><th>Products</th>
+          <th class="tr">Items</th><th class="tr">Total</th>
+          <th class="tr">Profit</th><th class="tc">Status</th>
+          <th class="tc">Actions</th></tr>
+      </thead>
+      <tbody>
+      {% if not sales_rows %}
+        <tr><td colspan="9" class="tc" style="padding:24px;color:#9ca3af">
+          No sales in this period.</td></tr>
+      {% endif %}
+      {% for r in sales_rows %}
+      <tr class="{{ 'row-void' if r.status=='voided' else '' }}">
+        <td class="mono">#{{ r.sale_id }}</td>
+        <td>{{ r.date }}</td><td>{{ r.time }}</td>
+        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.82rem">
+          {{ r.summary or '—' }}</td>
+        <td class="tr">{{ r.item_count }}</td>
+        <td class="tr"><strong>{{ fm(r.total_amount) }}</strong></td>
+        <td class="tr {{ '' if r.status=='voided' else ('green' if r.profit and r.profit>=0 else 'red') }}">
+          {{ '—' if r.status=='voided' else fm(r.profit) }}</td>
+        <td class="tc">
+          {% if r.status=='voided' %}<span class="badge b-red">↩ Reversed</span>
+          {% else %}<span class="badge b-green">✓ Done</span>{% endif %}
+        </td>
+        <td class="tc" style="white-space:nowrap">
+          {% if r.status=='completed' %}
+          <a href="{{ url_for('sale_reverse', sale_id=r.sale_id) }}"
+             class="btn btn-sm"
+             style="background:#fef3c7;color:#92400e;margin:1px">↩ Reverse</a>
+          {% endif %}
+          <!-- Delete with stock option -->
+          <button class="btn btn-sm"
+                  style="background:#fee2e2;color:#991b1b;margin:1px"
+                  onclick="confirmDelete({{ r.sale_id }}, '{{ r.status }}', {{ r.total_amount }})">
+            🗑 Delete
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Delete date range -->
+<div class="card" style="margin-top:16px">
+  <div class="card-hdr"><h2>🗑 Delete All Sales in Date Range</h2></div>
+  <div class="card-body">
+    <p style="color:#92400e;font-size:.88rem;margin-bottom:12px">
+      ⚠ This permanently deletes all sales in the selected period. A backup is recommended first.
+    </p>
+    <form method="post" action="{{ url_for('sale_delete_range') }}"
+          onsubmit="return validateRangeDelete(this)">
+      <input type="hidden" name="from" value="{{ dfrom }}"/>
+      <input type="hidden" name="to"   value="{{ dto }}"/>
+      <div class="fbar">
+        <label style="font-size:.85rem">
+          <input type="checkbox" name="restore_stock" value="yes" style="margin-right:5px"/>
+          Return items to stock (tick if goods came back, leave blank if goods left shop)
+        </label>
+      </div>
+      <div class="fbar">
+        <label style="font-weight:700;font-size:.88rem">
+          Type DELETE to confirm:
+        </label>
+        <input type="text" name="confirm" placeholder="DELETE" style="width:120px"/>
+        <button type="submit" class="btn btn-sm"
+                style="background:#dc2626;color:white">
+          Delete {{ dfrom }} → {{ dto }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+</div><!-- end tab-sales -->
+
+<!-- ── TREND TAB ─────────────────────────────────────── -->
+<div id="tab-trend">
+<div class="chart-box">
+  <div class="chart-title">Revenue &amp; Profit — {{ group }}</div>
+  {% if trend %}
+    {% set max_rev = trend|map(attribute='rev')|select|list %}
+    {% set peak_v  = max_rev|max if max_rev else 1 %}
+    {% set peak    = peak_v if peak_v > 0 else 1 %}
+    <div class="bars" style="height:150px;gap:3px">
+      {% for pt in trend %}
+      <div class="bar-col" title="{{ pt.period }}: {{ fm(pt.rev) }}">
+        <div class="bar-num" style="font-size:.65rem">
+          {% if pt.rev %}
+            {{ (pt.rev/1000)|round(1)|string + 'k' if pt.rev>=1000 else fm(pt.rev) }}
+          {% endif %}
+        </div>
+        <div style="position:relative;width:100%;flex:1;display:flex;align-items:flex-end">
+          <!-- revenue bar -->
+          <div style="position:absolute;bottom:0;width:100%;background:#3b82f6;border-radius:3px 3px 0 0;
+                      height:{{ [(pt.rev/peak*100)|int,2]|max }}%"></div>
+          <!-- profit overlay (narrower, greener) -->
+          {% if pt.profit is not none and pt.profit > 0 %}
+          <div style="position:absolute;bottom:0;left:25%;width:50%;background:#16a34a;
+                      border-radius:2px 2px 0 0;
+                      height:{{ [(pt.profit/peak*100)|int,1]|max }}%"></div>
+          {% endif %}
+        </div>
+        <div class="bar-lbl" style="font-size:.65rem">
+          {{ pt.period[5:] if pt.period|length==10 else pt.period }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="chart-legend">
+      <span><span class="legend-swatch" style="background:#3b82f6"></span>Revenue</span>
+      <span><span class="legend-swatch" style="background:#16a34a"></span>Profit</span>
+    </div>
+  {% else %}
+    <div class="tc" style="padding:40px;color:#9ca3af">No sales in this period.</div>
+  {% endif %}
+</div>
+</div>
+
+<!-- ── PROFIT BY PERIOD TAB ──────────────────────────── -->
+<div id="tab-profit" style="display:none">
+<div class="card">
+  <div class="card-hdr">
+    <h2>Profit by {{ group }}</h2>
+    <span style="font-size:.78rem;color:#9ca3af">Double-click a row for full product list</span>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th>Period</th><th class="tr">Sales</th><th class="tr">Revenue</th>
+          <th class="tr">Cost</th><th class="tr">Profit</th>
+          <th class="tr">Margin</th><th>Top Products</th></tr>
+      </thead>
+      <tbody>
+      {% if not prows %}
+        <tr><td colspan="7" class="tc" style="padding:24px;color:#9ca3af">No data for this period.</td></tr>
+      {% endif %}
+      {% for r in prows %}
+      {% set is_loss = r.profit is not none and r.profit < 0 %}
+      <tr class="{{ 'red' if is_loss else '' }}">
+        <td><strong>{{ r.period }}</strong></td>
+        <td class="tr">{{ r.sales_cnt }}</td>
+        <td class="tr">{{ fm(r.rev) }}</td>
+        <td class="tr">{{ fm(r.cost) if r.cost is not none else '—' }}</td>
+        <td class="tr {{ 'green' if r.profit and r.profit>=0 else 'red' if r.profit is not none else '' }}">
+          <strong>{{ fm(r.profit) if r.profit is not none else '—' }}</strong>
+        </td>
+        <td class="tr">{{ r.margin }}</td>
+        <td style="font-size:.8rem;color:#6b7280;max-width:240px;
+                   overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          {{ r.products or '—' }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- ── TOP PRODUCTS TAB ──────────────────────────────── -->
+<div id="tab-top" style="display:none">
+<div class="card">
+  <div class="card-hdr">
+    <h2>Top 20 Products</h2>
+    <span style="font-size:.78rem;color:#9ca3af">ranked by units sold</span>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th class="tc">Rank</th><th>Product</th>
+          <th class="tr">Units Sold</th><th class="tr">Revenue</th>
+          <th class="tr">Revenue Share</th><th class="tr">Profit</th></tr>
+      </thead>
+      <tbody>
+      {% if not top %}
+        <tr><td colspan="6" class="tc" style="padding:24px;color:#9ca3af">No sales data.</td></tr>
+      {% endif %}
+      {% for r in top %}
+      <tr>
+        <td class="tc">
+          <span class="badge {{ 'b-blue' if r.rank==1 else ('b-purple' if r.rank<=3 else 'b-grey') }}">
+            {{ r.rank }}
+          </span>
+        </td>
+        <td><strong>{{ r.name }}</strong></td>
+        <td class="tr">{{ r.units }}</td>
+        <td class="tr">{{ fm(r.rev) }}</td>
+        <td class="tr">{{ r.share }}</td>
+        <td class="tr {{ 'green' if r.profit and r.profit>=0 else 'red' if r.profit is not none else '' }}">
+          {{ fm(r.profit) if r.profit is not none else '—' }}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- ── LOW STOCK TAB ─────────────────────────────────── -->
+<div id="tab-low" style="display:none">
+<div class="card">
+  <div class="card-hdr">
+    <h2>Low Stock — Needs Restocking</h2>
+    <a href="{{ url_for('inventory',filter='low') }}" class="btn btn-grey btn-sm">Full Inventory</a>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th>ID</th><th>Product</th>
+          <th class="tr">Qty Left</th><th class="tc">Status</th></tr>
+      </thead>
+      <tbody>
+      {% if not low_rows %}
+        <tr><td colspan="4" class="tc" style="padding:24px;color:#16a34a">
+          ✅ All products are adequately stocked.</td></tr>
+      {% endif %}
+      {% for r in low_rows %}
+      <tr class="{{ 'row-out' if r.quantity==0 else 'row-low' }}">
+        <td class="mono">{{ r.product_id }}</td>
+        <td><strong>{{ r.product_name }}</strong></td>
+        <td class="tr">
+          <strong style="color:{{ '#dc2626' if r.quantity==0 else '#d97706' }}">
+            {{ r.quantity }}
+          </strong>
+        </td>
+        <td class="tc">
+          {% if r.quantity==0 %}<span class="badge b-red">🔴 Out of stock</span>
+          {% else %}<span class="badge b-amber">🟡 Low stock</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+</div>
+
+<script>
+function showTab(id, el) {
+  document.querySelectorAll('[id^="tab-"]').forEach(function(t) { t.style.display='none'; });
+  document.getElementById('tab-'+id).style.display = 'block';
+  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('on'); });
+  el.classList.add('on');
+}
+
+function confirmDelete(saleId, status, total) {
+  var msg = 'Permanently delete sale #' + saleId + ' (' + total.toFixed(2) + ')?\n\n';
+  if (status === 'completed') {
+    msg += 'Return items to stock? Click OK to return stock, Cancel to leave stock as-is.\n'
+         + '(If you cancel here no delete happens — use the form below instead for more options.)';
+    var restore = confirm(msg);
+    var f = document.createElement('form');
+    f.method = 'post';
+    f.action = '/reports/delete/' + saleId;
+    var inp = document.createElement('input');
+    inp.type='hidden'; inp.name='restore_stock'; inp.value = restore ? 'yes' : 'no';
+    f.appendChild(inp);
+    document.body.appendChild(f);
+    f.submit();
+  } else {
+    if (confirm('Permanently delete the record of reversed sale #' + saleId + '?')) {
+      var f = document.createElement('form');
+      f.method='post'; f.action='/reports/delete/'+saleId;
+      var inp=document.createElement('input');
+      inp.type='hidden'; inp.name='restore_stock'; inp.value='no';
+      f.appendChild(inp); document.body.appendChild(f); f.submit();
+    }
+  }
+}
+
+function validateRangeDelete(form) {
+  var confirm_val = form.confirm.value.trim();
+  if (confirm_val !== 'DELETE') {
+    alert('You must type DELETE (in capitals) to confirm bulk deletion.');
+    return false;
+  }
+  return true;
+}
+</script>
+{% endblock %}

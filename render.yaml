@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: retailpos-dashboard
+    runtime: python
+    buildCommand: "pip install flask werkzeug requests gunicorn"
+    startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    envVars:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: DASHBOARD_PASSWORD
+        sync: false
+      - key: DASHBOARD_SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - key: PIP_NO_CACHE_DIR
+        value: "1"

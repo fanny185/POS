@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}Home – RetailPOS{% endblock %}
+{% block content %}
+
+{# Auto-refresh the home page every 30 seconds so KPIs stay current #}
+<script>
+  setTimeout(function(){ window.location.reload(); }, 30000);
+</script>
+
+{% if now.hour < 12 %}{% set greet="Good morning" %}
+{% elif now.hour < 17 %}{% set greet="Good afternoon" %}
+{% else %}{% set greet="Good evening" %}{% endif %}
+
+<div class="h1">{{ greet }} — here is how the shop is doing.
+  <small>{{ now.strftime("%A, %d %B %Y") }}</small>
+</div>
+
+<!-- Quick action tiles -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:22px">
+  {% for label,sub,color,href in [
+    ("🛒 Sales","Today's transactions","#2563eb", url_for('sales', **{'from':today,'to':today})),
+    ("📦 Inventory","Products & stock","#0f766e", url_for('inventory')),
+    ("📊 Reports","Sales & profit","#7c3aed",    url_for('reports')),
+    ("⚠ Low Stock","Needs restocking","#b45309", url_for('inventory',filter='low')),
+  ] %}
+  <a href="{{ href }}" style="background:{{ color }};color:#fff;border-radius:9px;
+     padding:14px 16px;font-weight:700;font-size:.92rem;display:block;text-decoration:none;
+     transition:opacity .15s" onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+    {{ label }}<br>
+    <span style="font-size:.78rem;font-weight:400;opacity:.85">{{ sub }}</span>
+  </a>
+  {% endfor %}
+</div>
+
+<!-- KPI cards -->
+<div class="kpi-row">
+
+  <div class="kpi">
+    <div class="kpi-bar" style="background:#2563eb"></div>
+    <div class="kpi-head"><span class="kpi-icon">💰</span><span class="kpi-lbl">Today's Sales</span></div>
+    <div class="kpi-val">{{ fm(td.rev) }}</div>
+    {% set txt,cls = vs_text(td.rev, yd.rev, 'yesterday') %}
+    <div class="kpi-sub {{ cls }}">{{ txt }}</div>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi-bar" style="background:{{ '#16a34a' if td.profit >= 0 else '#dc2626' }}"></div>
+    <div class="kpi-head"><span class="kpi-icon">📈</span><span class="kpi-lbl">Today's Profit</span></div>
+    <div class="kpi-val {{ 'green' if td.profit >= 0 else 'red' }}">{{ fm(td.profit) }}</div>
+    {% set txt,cls = vs_text(td.profit, yd.profit, 'yesterday') %}
+    <div class="kpi-sub {{ cls }}">{{ txt }}</div>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi-bar" style="background:#0ea5e9"></div>
+    <div class="kpi-head"><span class="kpi-icon">🧾</span><span class="kpi-lbl">Transactions</span></div>
+    <div class="kpi-val">{{ td.cnt }}</div>
+    {% set txt,cls = vs_text(td.cnt, yd.cnt, 'yesterday') %}
+    <div class="kpi-sub {{ cls }}">{{ txt }}</div>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi-bar" style="background:#7c3aed"></div>
+    <div class="kpi-head"><span class="kpi-icon">📅</span><span class="kpi-lbl">Last 7 Days</span></div>
+    <div class="kpi-val">{{ fm(wk.rev) }}</div>
+    <div class="kpi-sub muted">{{ wk.cnt }} sales</div>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi-bar" style="background:#0f766e"></div>
+    <div class="kpi-head"><span class="kpi-icon">💰</span><span class="kpi-lbl">Stock Value</span></div>
+    <div class="kpi-val">{{ fm(stock_cost) }}</div>
+    <div class="kpi-sub muted">{{ total_prods }} products at cost</div>
+  </div>
+
+  <div class="kpi">
+    <div class="kpi-bar" style="background:{{ '#dc2626' if out_n else ('#d97706' if low_n else '#16a34a') }}"></div>
+    <div class="kpi-head">
+      <span class="kpi-icon">{{ '🔴' if out_n else ('🟡' if low_n else '✅') }}</span>
+      <span class="kpi-lbl">Stock Alerts</span>
+    </div>
+    <div class="kpi-val {{ 'red' if out_n else ('green' if not low_n else '') }}"
+         style="{{ 'color:#d97706' if (not out_n and low_n) else '' }}">
+      {{ out_n + low_n }}</div>
+    <div class="kpi-sub {{ 'muted' if not (out_n+low_n) else '' }}"
+         style="{{ 'color:#d97706' if low_n and not out_n else '' }}">
+      {{ out_n ~ ' out  |  ' ~ low_n ~ ' low' if (out_n+low_n) else 'All stocked up ✓' }}
+    </div>
+  </div>
+
+</div>
+
+<!-- Lower area: chart + lists -->
+<div style="display:grid;grid-template-columns:3fr 2fr;gap:16px">
+
+  <!-- 7-day chart -->
+  <div class="chart-box">
+    <div class="chart-title">Sales – Last 7 Days</div>
+    {% set max_v = chart|map(attribute='value')|max %}
+    {% set peak  = max_v if max_v > 0 else 1 %}
+    <div class="bars">
+      {% for bar in chart %}
+      <div class="bar-col">
+        <div class="bar-num">{{ fm(bar.value) if bar.value else "" }}</div>
+        <div class="bar-rev"
+             style="height:{{ [(bar.value/peak*100)|int, 2]|max }}px;
+                    background:{{ '#2563eb' if bar.is_today else '#93c5fd' }}">
+        </div>
+        <div class="bar-lbl">{{ bar.label }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="chart-legend">
+      <span><span class="legend-swatch" style="background:#2563eb"></span>Today</span>
+      <span><span class="legend-swatch" style="background:#93c5fd"></span>Previous days</span>
+    </div>
+  </div>
+
+  <!-- Right column -->
+  <div style="display:flex;flex-direction:column;gap:14px">
+
+    <!-- Recent sales -->
+    <div class="card" style="flex:1;min-height:0">
+      <div class="card-hdr">
+        <h2>Recent Sales</h2>
+        <a href="{{ url_for('sales') }}" class="btn btn-grey btn-sm">View all</a>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Time</th><th class="tr">Items</th><th class="tr">Total</th></tr></thead>
+          <tbody>
+          {% for r in recent %}
+          <tr class="{{ 'row-void' if r.status=='voided' else '' }}">
+            <td class="mono"><a href="{{ url_for('sales', sel=r.sale_id) }}">#{{ r.sale_id }}</a></td>
+            <td>{{ r.time }}</td>
+            <td class="tr">{{ r.item_count }}</td>
+            <td class="tr"><strong>{{ fm(r.total_amount) }}</strong></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="tc" style="padding:18px;color:#9ca3af">No sales today yet</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Low-stock alerts -->
+    <div class="card" style="flex:1;min-height:0">
+      <div class="card-hdr">
+        <h2>Needs Restocking</h2>
+        <a href="{{ url_for('inventory', filter='low') }}" class="btn btn-grey btn-sm">View all</a>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Product</th><th class="tr">Stock</th><th class="tc">Status</th></tr></thead>
+          <tbody>
+          {% for r in alerts %}
+          <tr class="{{ 'row-out' if r.quantity==0 else 'row-low' }}">
+            <td><strong>{{ r.product_name }}</strong></td>
+            <td class="tr"><strong style="color:{{ '#dc2626' if r.quantity==0 else '#d97706' }}">{{ r.quantity }}</strong></td>
+            <td class="tc">
+              {% if r.quantity==0 %}<span class="badge b-red">Out of stock</span>
+              {% else %}<span class="badge b-amber">Low</span>{% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="3" class="tc" style="padding:18px;color:#16a34a">All stocked up ✓</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Restock – {{ prod.product_name }} – RetailPOS{% endblock %}
+{% block content %}
+
+<div style="max-width:500px;margin:0 auto">
+
+<div class="h1">
+  📦 Restock Product
+  <small><a href="{{ url_for('inventory') }}">← Back to Inventory</a></small>
+</div>
+
+{% if error %}
+<div style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;
+     padding:11px 15px;border-radius:8px;margin-bottom:16px;font-size:.9rem">
+  ⚠ {{ error }}
+</div>
+{% endif %}
+
+<!-- Product summary card -->
+<div class="card" style="margin-bottom:16px">
+  <div class="card-hdr"><h2>{{ prod.product_name }}</h2></div>
+  <div class="card-body">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;text-align:center">
+      <div>
+        <div style="font-size:.75rem;color:#6b7280;font-weight:700;text-transform:uppercase">Current Stock</div>
+        <div style="font-size:1.6rem;font-weight:800;
+             color:{{ '#dc2626' if prod.quantity==0 else ('#d97706' if prod.quantity<=5 else '#111827') }}">
+          {{ prod.quantity }}
+        </div>
+        <div style="font-size:.78rem;color:#9ca3af">units</div>
+      </div>
+      <div>
+        <div style="font-size:.75rem;color:#6b7280;font-weight:700;text-transform:uppercase">Pack Size</div>
+        <div style="font-size:1.6rem;font-weight:800">{{ units }}</div>
+        <div style="font-size:.78rem;color:#9ca3af">units per pack</div>
+      </div>
+      <div>
+        <div style="font-size:.75rem;color:#6b7280;font-weight:700;text-transform:uppercase">Pack Cost</div>
+        <div style="font-size:1.6rem;font-weight:800">
+          {{ fm(prod.ordering_price) if prod.ordering_price is not none else '—' }}
+        </div>
+        <div style="font-size:.78rem;color:#9ca3af">per pack</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form method="post">
+
+  <!-- Mode selector (only shown when pack size > 1) -->
+  {% if units > 1 %}
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-hdr"><h2>Receiving mode</h2></div>
+    <div class="card-body">
+      <label style="display:flex;align-items:center;gap:10px;margin-bottom:10px;cursor:pointer">
+        <input type="radio" name="mode" value="packs"
+               {{ 'checked' if f.mode=='packs' }}
+               onchange="updateResult()" style="width:18px;height:18px"/>
+        <span>
+          <strong>Packs received</strong>
+          <span style="color:#6b7280;font-size:.85rem"> — 1 pack = {{ units }} units</span>
+        </span>
+      </label>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+        <input type="radio" name="mode" value="units"
+               {{ 'checked' if f.mode=='units' }}
+               onchange="updateResult()" style="width:18px;height:18px"/>
+        <span><strong>Single units received</strong></span>
+      </label>
+    </div>
+  </div>
+  {% else %}
+  <input type="hidden" name="mode" value="units"/>
+  {% endif %}
+
+  <!-- Amount received -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-hdr"><h2>Amount received</h2></div>
+    <div class="card-body">
+      <input type="number" name="amount" id="f_amount" value="{{ f.amount }}"
+             min="1" step="1" required autofocus
+             placeholder="Enter quantity received"
+             style="width:100%;padding:10px 13px;border:1px solid #d1d5db;
+                    border-radius:7px;font-size:1.1rem;font-weight:700"
+             oninput="updateResult()"/>
+
+      <!-- Live result preview -->
+      <div id="result-preview" style="margin-top:10px;padding:10px 14px;border-radius:7px;
+           background:#f0fdf4;color:#166534;font-weight:700;font-size:.9rem;
+           display:{{ 'block' if result else 'none' }}">
+        {{ result or '' }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Optional new pack cost -->
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-hdr"><h2>Update ordering price (optional)</h2></div>
+    <div class="card-body">
+      <input type="number" name="cost" value="{{ f.cost }}" min="0" step="0.01"
+             placeholder="Leave blank to keep current price"
+             style="width:100%;padding:9px 12px;border:1px solid #d1d5db;
+                    border-radius:7px;font-size:.95rem"/>
+      <div style="font-size:.78rem;color:#6b7280;margin-top:5px">
+        Only update if your supplier changed their price. Applies to future sales only.
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px">
+    <button type="submit" class="btn btn-blue"
+            style="background:#16a34a">
+      ✓ Add Stock
+    </button>
+    <a href="{{ url_for('inventory') }}" class="btn btn-grey">Cancel</a>
+  </div>
+
+</form>
+</div>
+
+<script>
+var currentQty = {{ prod.quantity }};
+var packSize   = {{ units }};
+
+function updateResult() {
+  var amount = parseInt(document.getElementById('f_amount').value);
+  if (isNaN(amount) || amount < 1) {
+    document.getElementById('result-preview').style.display = 'none';
+    return;
+  }
+  var modeEl = document.querySelector('input[name="mode"]:checked');
+  var mode   = modeEl ? modeEl.value : 'units';
+  var added  = mode === 'packs' ? amount * packSize : amount;
+  var newQty = currentQty + added;
+  var el     = document.getElementById('result-preview');
+  el.style.display = 'block';
+  el.textContent   = '✓  Adds ' + added + ' units  →  New stock: ' + newQty;
+}
+updateResult();
+</script>
+{% endblock %}

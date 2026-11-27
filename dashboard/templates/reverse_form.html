@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Reverse Sale #{{ sale.sale_id }} – RetailPOS{% endblock %}
+{% block content %}
+
+<div style="max-width:520px;margin:0 auto">
+
+<div class="h1">
+  ↩ Reverse Sale #{{ sale.sale_id }}
+  <small><a href="{{ url_for('reports') }}">← Back to Reports</a></small>
+</div>
+
+{% if error %}
+<div style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;
+     padding:11px 15px;border-radius:8px;margin-bottom:16px;font-size:.9rem">
+  ⚠ {{ error }}
+</div>
+{% endif %}
+
+<!-- Sale summary -->
+<div class="card" style="margin-bottom:16px">
+  <div class="card-hdr"><h2>Sale Details</h2></div>
+  <div class="card-body">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;text-align:center">
+      <div>
+        <div style="font-size:.75rem;color:#6b7280;font-weight:700;text-transform:uppercase">Date</div>
+        <div style="font-size:1rem;font-weight:700">{{ sale.sale_date[:10] }}</div>
+        <div style="font-size:.82rem;color:#9ca3af">{{ sale.sale_date[11:16] }}</div>
+      </div>
+      <div>
+        <div style="font-size:.75rem;color:#6b7280;font-weight:700;text-transform:uppercase">Total</div>
+        <div style="font-size:1.5rem;font-weight:800;color:#dc2626">{{ fm(sale.total_amount) }}</div>
+        <div style="font-size:.78rem;color:#9ca3af">to refund customer</div>
+      </div>
+      <div>
+        <div style="font-size:.75rem;color:#6b7280;font-weight:700;text-transform:uppercase">Status</div>
+        <div style="font-size:1rem;font-weight:700;color:#16a34a">Completed</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Warning -->
+<div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:9px;
+     padding:14px 16px;margin-bottom:16px;font-size:.88rem;color:#92400e">
+  <strong>⚠ What reversing this sale will do:</strong>
+  <ul style="margin:8px 0 0 18px;line-height:1.8">
+    <li>All items will be <strong>returned to inventory stock</strong></li>
+    <li><strong>{{ fm(sale.total_amount) }}</strong> will be deducted from sales and profit totals</li>
+    <li>You must <strong>refund the customer {{ fm(sale.total_amount) }}</strong></li>
+    <li>This <strong>cannot be undone</strong></li>
+  </ul>
+</div>
+
+<form method="post">
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-hdr"><h2>Reason for reversal *</h2></div>
+    <div class="card-body">
+      <textarea name="reason" required rows="3" autofocus
+                placeholder="e.g. Customer changed mind, wrong item scanned, price error…"
+                style="width:100%;padding:9px 12px;border:1px solid #d1d5db;
+                       border-radius:7px;font-size:.95rem;resize:vertical;
+                       font-family:inherit"></textarea>
+      <div style="font-size:.78rem;color:#6b7280;margin-top:5px">
+        Required for the audit trail. Be specific.
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:10px">
+    <button type="submit" class="btn"
+            style="background:#dc2626;color:white;font-weight:700;padding:10px 20px"
+            onclick="return confirm('Reverse sale #{{ sale.sale_id }} for {{ fm(sale.total_amount) }}?\n\nThis cannot be undone. Make sure you refund the customer.')">
+      ↩ Confirm Reversal
+    </button>
+    <a href="{{ url_for('reports') }}" class="btn btn-grey">Cancel</a>
+  </div>
+</form>
+</div>
+{% endblock %}

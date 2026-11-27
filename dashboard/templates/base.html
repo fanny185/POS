@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>{% block title %}RetailPOS Dashboard{% endblock %}</title>
+<style>
+/* ── CSS Variables: Light theme (default) ────────────────────────────── */
+:root {
+  --bg:          #f0f2f5;
+  --card:        #ffffff;
+  --border:      #e5e7eb;
+  --muted:       #6b7280;
+  --text:        #111827;
+  --text-soft:   #374151;
+  --dark:        #1f2937;
+  --blue:        #2563eb;
+  --blue-hover:  #1d4ed8;
+  --green:       #16a34a;
+  --red:         #dc2626;
+  --amber:       #d97706;
+  --nav-bg:      #1f2937;
+  --nav-fg:      #d1d5db;
+  --nav-border:  #2563eb;
+  --btn-bg:      #e5e7eb;
+  --btn-fg:      #374151;
+  --btn-hover:   #d1d5db;
+  --input-bg:    #ffffff;
+  --input-fg:    #111827;
+  --input-bdr:   #d1d5db;
+  --row-odd:     #f9fafb;
+  --row-low:     #fff4cc;
+  --row-out:     #fde2e2;
+  --row-void:    #9ca3af;
+  --th-bg:       #f1f5f9;
+  --th-fg:       #6b7280;
+  --tfoot-bg:    #f9fafb;
+  --shadow:      rgba(0,0,0,.06);
+  --toggle-icon: "🌙";
+  --toggle-lbl:  "Dark mode";
+}
+
+/* ── Dark theme overrides ────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg:          #0f172a;
+  --card:        #1e293b;
+  --border:      #334155;
+  --muted:       #94a3b8;
+  --text:        #f1f5f9;
+  --text-soft:   #cbd5e1;
+  --dark:        #f1f5f9;
+  --blue:        #3b82f6;
+  --blue-hover:  #2563eb;
+  --green:       #22c55e;
+  --red:         #ef4444;
+  --amber:       #f59e0b;
+  --nav-bg:      #020617;
+  --nav-fg:      #94a3b8;
+  --nav-border:  #3b82f6;
+  --btn-bg:      #334155;
+  --btn-fg:      #e2e8f0;
+  --btn-hover:   #475569;
+  --input-bg:    #1e293b;
+  --input-fg:    #f1f5f9;
+  --input-bdr:   #475569;
+  --row-odd:     #172032;
+  --row-low:     #3d3200;
+  --row-out:     #3d0f0f;
+  --row-void:    #64748b;
+  --th-bg:       #253347;
+  --th-fg:       #94a3b8;
+  --tfoot-bg:    #1a2840;
+  --shadow:      rgba(0,0,0,.3);
+  --toggle-icon: "☀";
+  --toggle-lbl:  "Light mode";
+}
+
+/* ── Reset ───────────────────────────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;
+     background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;
+     transition:background .2s,color .2s}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ── Nav ─────────────────────────────────────────────────────────────── */
+.nav{background:var(--nav-bg);display:flex;align-items:stretch;
+     border-bottom:3px solid var(--nav-border);flex-wrap:nowrap}
+.nav-brand{color:#f9fafb;font-size:1rem;font-weight:700;padding:0 18px;
+           display:flex;align-items:center;white-space:nowrap;
+           border-right:1px solid #374151}
+.nav a{color:var(--nav-fg);padding:0 15px;font-size:.9rem;
+       display:flex;align-items:center;transition:background .15s;white-space:nowrap}
+.nav a:hover,.nav a.on{background:var(--blue);color:#fff;text-decoration:none}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 12px}
+.cloud-pill{font-size:.75rem;padding:4px 10px;border-radius:99px;
+            background:#374151;color:#9ca3af;white-space:nowrap}
+.nav-signout{background:#7f1d1d;color:#fca5a5;padding:7px 14px;border-radius:6px;
+             font-size:.82rem;font-weight:600;cursor:pointer;border:none}
+.nav-signout:hover{background:#991b1b}
+
+/* Theme toggle button */
+.theme-toggle{background:transparent;border:1px solid #374151;color:var(--nav-fg);
+              padding:5px 12px;border-radius:6px;font-size:.82rem;cursor:pointer;
+              white-space:nowrap;transition:background .15s}
+.theme-toggle:hover{background:#374151;color:white}
+
+/* ── Layout ──────────────────────────────────────────────────────────── */
+.main{padding:22px 24px 56px}
+
+/* ── Page heading ────────────────────────────────────────────────────── */
+.h1{font-size:1.35rem;font-weight:800;color:var(--text);margin-bottom:18px;
+    display:flex;align-items:baseline;gap:12px}
+.h1 small{font-size:.9rem;font-weight:400;color:var(--muted)}
+
+/* ── KPI row ─────────────────────────────────────────────────────────── */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));
+         gap:12px;margin-bottom:22px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;
+     padding:14px 15px;position:relative;overflow:hidden;
+     transition:background .2s,border-color .2s}
+.kpi-bar{position:absolute;left:0;top:0;bottom:0;width:5px}
+.kpi-head{display:flex;align-items:center;gap:5px;margin-bottom:5px}
+.kpi-icon{font-size:1rem}
+.kpi-lbl{font-size:.7rem;font-weight:700;text-transform:uppercase;
+         letter-spacing:.06em;color:var(--muted)}
+.kpi-val{font-size:1.6rem;font-weight:800;line-height:1.1;color:var(--text)}
+.kpi-sub{font-size:.78rem;margin-top:4px;min-height:1em;color:var(--muted)}
+.kpi-sub.up{color:var(--green)}.kpi-sub.dn{color:var(--red)}.kpi-sub.muted{color:var(--muted)}
+
+/* ── Card ────────────────────────────────────────────────────────────── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;
+      overflow:hidden;margin-bottom:18px;transition:background .2s,border-color .2s}
+.card-hdr{padding:11px 18px;border-bottom:1px solid var(--border);
+          background:var(--th-bg);display:flex;align-items:center;
+          justify-content:space-between;transition:background .2s}
+.card-hdr h2{font-size:.92rem;font-weight:700;color:var(--text-soft);margin:0}
+.card-body{padding:18px}
+
+/* ── Table ───────────────────────────────────────────────────────────── */
+.tbl-wrap{overflow-x:auto;width:100%}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+thead th{background:var(--th-bg);padding:9px 12px;text-align:left;
+         font-size:.72rem;font-weight:700;text-transform:uppercase;
+         letter-spacing:.05em;color:var(--th-fg);
+         border-bottom:2px solid var(--border);white-space:nowrap}
+tbody td{padding:9px 12px;border-bottom:1px solid var(--border);
+         vertical-align:middle;color:var(--text)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--row-odd)}
+tfoot td{padding:9px 12px;font-weight:700;background:var(--tfoot-bg);
+         border-top:2px solid var(--border);color:var(--text)}
+.tr{text-align:right}.tc{text-align:center}
+.mono{font-family:'Courier New',monospace;font-size:.85rem}
+
+/* Row highlight colours */
+.row-out td{background:var(--row-out) !important}
+.row-low td{background:var(--row-low) !important}
+.row-void td{color:var(--row-void)}
+.red{color:var(--red)}.green{color:var(--green)}
+
+/* ── Badge ───────────────────────────────────────────────────────────── */
+.badge{display:inline-block;padding:2px 9px;border-radius:99px;
+       font-size:.72rem;font-weight:700;white-space:nowrap}
+.b-green{background:#dcfce7;color:#166534}
+.b-red{background:#fee2e2;color:#991b1b}
+.b-amber{background:#fef3c7;color:#92400e}
+.b-blue{background:#dbeafe;color:#1e40af}
+.b-grey{background:var(--btn-bg);color:var(--muted)}
+.b-purple{background:#f3e8ff;color:#6b21a8}
+
+[data-theme="dark"] .b-green{background:#14532d;color:#86efac}
+[data-theme="dark"] .b-red{background:#450a0a;color:#fca5a5}
+[data-theme="dark"] .b-amber{background:#451a03;color:#fcd34d}
+[data-theme="dark"] .b-blue{background:#1e3a5f;color:#93c5fd}
+[data-theme="dark"] .b-purple{background:#3b0764;color:#d8b4fe}
+
+/* ── Filter bar ──────────────────────────────────────────────────────── */
+.fbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+.fbar label{font-size:.82rem;font-weight:600;color:var(--text-soft)}
+input[type=text],input[type=password],input[type=date],input[type=number],
+select,textarea{
+  padding:7px 11px;border:1px solid var(--input-bdr);border-radius:7px;
+  font-size:.88rem;font-family:inherit;
+  background:var(--input-bg);color:var(--input-fg);outline:none;
+  transition:border .15s,background .2s}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--blue);box-shadow:0 0 0 2px color-mix(in srgb,var(--blue) 20%,transparent)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;
+     border-radius:7px;font-size:.85rem;font-weight:600;border:none;
+     cursor:pointer;text-decoration:none;transition:background .15s,color .15s}
+.btn:hover{text-decoration:none;opacity:.9}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-blue:hover{background:var(--blue-hover);color:#fff}
+.btn-grey{background:var(--btn-bg);color:var(--btn-fg)}
+.btn-grey:hover{background:var(--btn-hover)}
+.btn-sm{padding:5px 10px;font-size:.78rem}
+
+/* ── Summary strip ───────────────────────────────────────────────────── */
+.summary{background:var(--th-bg);border:1px solid var(--border);border-radius:8px;
+         padding:8px 16px;display:flex;flex-wrap:wrap;gap:18px;font-size:.85rem;
+         font-weight:600;color:var(--text-soft);margin-bottom:14px}
+
+/* ── Alerts ──────────────────────────────────────────────────────────── */
+.alert{padding:10px 15px;border-radius:7px;margin-bottom:12px;font-size:.85rem}
+.alert-g{background:#dcfce7;color:#166534;border:1px solid #86efac}
+.alert-a{background:#fef3c7;color:#92400e;border:1px solid #fcd34d}
+[data-theme="dark"] .alert-g{background:#14532d;color:#86efac;border-color:#166534}
+[data-theme="dark"] .alert-a{background:#451a03;color:#fcd34d;border-color:#92400e}
+
+/* ── Detail panel ────────────────────────────────────────────────────── */
+.detail-hdr{background:var(--th-bg);padding:9px 16px;
+            border-bottom:1px solid var(--border);
+            display:flex;justify-content:space-between;
+            align-items:center;flex-wrap:wrap;gap:6px}
+.detail-hdr h3{font-size:.9rem;font-weight:700;color:var(--text);margin:0}
+.detail-hdr .pay{font-size:.8rem;color:var(--muted)}
+
+/* ── Tabs ────────────────────────────────────────────────────────────── */
+.tabs{display:flex;gap:1px;border-bottom:2px solid var(--border);
+      margin-bottom:16px;flex-wrap:wrap}
+.tab{padding:8px 16px;font-size:.85rem;font-weight:600;color:var(--muted);
+     cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;
+     text-decoration:none;border-radius:4px 4px 0 0}
+.tab:hover{color:var(--blue);background:var(--th-bg);text-decoration:none}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue);background:var(--card)}
+
+/* ── Bar chart ───────────────────────────────────────────────────────── */
+.chart-box{background:var(--card);border:1px solid var(--border);
+           border-radius:10px;padding:16px 16px 10px;margin-bottom:20px}
+.chart-title{font-size:.72rem;font-weight:700;text-transform:uppercase;
+             letter-spacing:.06em;color:var(--muted);margin-bottom:12px}
+.bars{display:flex;align-items:flex-end;gap:4px;height:110px}
+.bar-col{display:flex;flex-direction:column;align-items:center;flex:1;gap:2px}
+.bar-rev{border-radius:3px 3px 0 0;min-height:2px;width:100%}
+.bar-lbl{font-size:.7rem;color:var(--muted);white-space:nowrap;margin-top:2px}
+.bar-num{font-size:.68rem;font-weight:600;color:var(--text-soft)}
+.chart-legend{display:flex;gap:12px;margin-top:8px;font-size:.72rem;color:var(--muted)}
+.legend-swatch{display:inline-block;width:11px;height:11px;border-radius:2px;
+               vertical-align:middle;margin-right:3px}
+
+/* ── Responsive ──────────────────────────────────────────────────────── */
+@media(max-width:680px){
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .main{padding:12px 12px 40px}
+  .nav a{padding:0 10px;font-size:.82rem}
+}
+</style>
+</head>
+<body>
+{% if session.get('ok') %}
+<nav class="nav">
+  <span class="nav-brand">📊 RetailPOS</span>
+  <a href="{{ url_for('home') }}"      class="{{ 'on' if request.endpoint=='home' }}">🏠 Home</a>
+  <a href="{{ url_for('sales') }}"     class="{{ 'on' if request.endpoint=='sales' }}">🧾 Sales</a>
+  <a href="{{ url_for('reports') }}"   class="{{ 'on' if request.endpoint=='reports' }}">📈 Reports</a>
+  <a href="{{ url_for('inventory') }}" class="{{ 'on' if request.endpoint=='inventory' }}">📦 Inventory</a>
+  <div class="nav-right">
+    <button class="theme-toggle" id="theme-btn" onclick="toggleTheme()" title="Switch theme">
+      🌙 Dark
+    </button>
+    <button class="theme-toggle" id="refresh-btn" onclick="forceRefresh()" title="Refresh data from cloud" style="margin-right:4px">
+      🔄
+    </button>
+    <span class="cloud-pill" id="cpill">…</span>
+    <form method="post" action="{{ url_for('logout') }}" style="margin:0">
+      <button class="nav-signout" type="submit">Sign out</button>
+    </form>
+  </div>
+</nav>
+{% endif %}
+
+<main class="main">
+{% block content %}{% endblock %}
+</main>
+
+<script>
+/* ── Dark / Light mode ──────────────────────────────────────────────── */
+(function(){
+  var saved = localStorage.getItem('retailpos-theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+  // button text updated after DOM ready
+})();
+
+function toggleTheme(){
+  var html = document.documentElement;
+  var next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('retailpos-theme', next);
+  updateThemeBtn(next);
+}
+
+function updateThemeBtn(theme){
+  var btn = document.getElementById('theme-btn');
+  if(!btn) return;
+  btn.textContent = theme === 'dark' ? '☀ Light' : '🌙 Dark';
+  btn.title = theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode';
+}
+
+// Set button label on page load
+document.addEventListener('DOMContentLoaded', function(){
+  var theme = document.documentElement.getAttribute('data-theme') || 'light';
+  updateThemeBtn(theme);
+});
+
+/* ── Cloud status pill ──────────────────────────────────────────────── */
+function refreshCloud(){
+  fetch("{{ url_for('api_status') if session.get('ok') else '#' }}")
+    .then(r=>r.json()).then(d=>{
+      var p=document.getElementById('cpill'); if(!p)return;
+      var m={'online':'🟢 Cloud live','offline':'🟡 Offline',
+             'not_configured':'⚪ No cloud','error':'🔴 Cloud error'};
+      var c={'online':'#166534','offline':'#92400e',
+             'not_configured':'#374151','error':'#991b1b'};
+      p.textContent=m[d.cloud]||d.cloud;
+      p.style.background=c[d.cloud]||'#374151';
+      p.style.color='#f9fafb';
+    }).catch(function(){});
+}
+refreshCloud(); setInterval(refreshCloud,15000);
+
+/* ── Force refresh from cloud ───────────────────────────────────────── */
+function forceRefresh(){
+  var btn=document.getElementById('refresh-btn');
+  if(btn){ btn.textContent='⏳'; btn.disabled=true; }
+  fetch("{{ url_for('api_refresh') if session.get('ok') else '#' }}",
+        {method:'POST',headers:{'Content-Type':'application/json'}})
+    .then(r=>r.json()).then(d=>{
+      if(btn){ btn.textContent='🔄'; btn.disabled=false; }
+      window.location.reload();
+    }).catch(function(){
+      if(btn){ btn.textContent='🔄'; btn.disabled=false; }
+    });
+}
+</script>
+</body>
+</html>

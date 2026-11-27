@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Sales – RetailPOS{% endblock %}
+{% block content %}
+
+<div class="h1">Sales <small>{{ dfrom }} → {{ dto }}</small></div>
+
+<!-- Filters -->
+<form method="get" class="fbar">
+  <label>From</label><input type="date" name="from" value="{{ dfrom }}"/>
+  <label>To</label><input type="date" name="to" value="{{ dto }}"/>
+  <label>Status</label>
+  <select name="status">
+    <option value="all"       {{ 'selected' if stflt=='all' }}>All</option>
+    <option value="completed" {{ 'selected' if stflt=='completed' }}>Completed</option>
+    <option value="voided"    {{ 'selected' if stflt=='voided' }}>Reversed</option>
+  </select>
+  <label>Search</label>
+  <input type="text" name="q" value="{{ srch }}" placeholder="Receipt # or product" style="width:180px"/>
+  <button type="submit" class="btn btn-blue btn-sm">Apply</button>
+  <a href="{{ url_for('sales') }}" class="btn btn-grey btn-sm">Reset</a>
+</form>
+
+<!-- Summary -->
+<div class="summary">
+  <span>{{ rows|length }} sale{{ 's' if rows|length!=1 }}</span>
+  <span>Revenue: <span class="green">{{ fm(total_rev) }}</span></span>
+  <span>Profit: <span class="{{ 'green' if total_prof>=0 else 'red' }}">{{ fm(total_prof) }}</span></span>
+</div>
+
+<!-- Sales table -->
+<div class="card">
+  <div class="card-hdr">
+    <h2>Sales List</h2>
+    <span class="badge {{ 'b-green' if cloud=='online' else 'b-amber' }}">
+      {{ '🟢 Cloud synced' if cloud=='online' else '🟡 Local data' }}
+    </span>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Sale #</th><th>Date</th><th>Time</th>
+          <th>Products</th>
+          <th class="tr">Items</th><th class="tr">Total</th>
+          <th class="tr">Profit</th><th class="tc">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% if not rows %}
+        <tr><td colspan="8" class="tc" style="padding:28px;color:#9ca3af">No sales found for this period.</td></tr>
+      {% endif %}
+      {% for r in rows %}
+      <tr class="{{ 'row-void' if r.status=='voided' else '' }}" style="cursor:pointer"
+          onclick="location='{{ url_for('sales', **{'from':dfrom,'to':dto,'status':stflt,'q':srch,'sel':r.sale_id}) }}'">
+        <td class="mono">
+          <a href="{{ url_for('sales',**{'from':dfrom,'to':dto,'status':stflt,'q':srch,'sel':r.sale_id}) }}"
+             onclick="event.stopPropagation()">#{{ r.sale_id }}</a>
+        </td>
+        <td>{{ r.date }}</td>
+        <td>{{ r.time }}</td>
+        <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+          {{ r.summary or '—' }}</td>
+        <td class="tr">{{ r.item_count }}</td>
+        <td class="tr"><strong>{{ fm(r.total_amount) }}</strong></td>
+        <td class="tr {{ '' if r.status=='voided' else ('green' if r.profit and r.profit>=0 else 'red') }}">
+          {{ '—' if r.status=='voided' else fm(r.profit) }}</td>
+        <td class="tc">
+          {% if r.status=='voided' %}<span class="badge b-red">↩ Reversed</span>
+          {% else %}<span class="badge b-green">✓ Completed</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Detail panel -->
+{% if sel_sale %}
+<div class="card">
+  <div class="detail-hdr">
+    <h3>
+      Sale #{{ sel_sale.sale_id }}
+      &nbsp;•&nbsp; {{ sel_sale.sale_date[:10] }} &nbsp; {{ sel_sale.sale_date[11:16] }}
+      &nbsp;
+      {% if sel_sale.status=='voided' %}<span class="badge b-red">⚠ REVERSED</span>
+      {% else %}<span class="badge b-green">✓ Completed</span>{% endif %}
+    </h3>
+    <span class="pay">
+      Total: <strong>{{ fm(sel_sale.total_amount) }}</strong>
+      &nbsp;|&nbsp; Received: {{ fm(sel_sale.amount_received) }}
+      &nbsp;|&nbsp; Change: {{ fm(sel_sale.change_given) }}
+      {% if sel_sale.status=='voided' and sel_sale.voided_at %}
+        &nbsp;|&nbsp; Reversed {{ sel_sale.voided_at }}:
+        {{ sel_sale.void_reason or 'no reason given' }}
+      {% endif %}
+    </span>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th>Product</th><th class="tr">Qty</th><th class="tr">Unit Price</th>
+          <th class="tr">Line Total</th><th class="tr">Profit</th></tr>
+      </thead>
+      <tbody>
+      {% for it in sel_items %}
+      {% set lp = (it.line_total - it.quantity * it.unit_cost) if it.unit_cost is not none else none %}
+      <tr>
+        <td>{{ it.product_name }}</td>
+        <td class="tr">{{ it.quantity }}</td>
+        <td class="tr">{{ fm(it.unit_price) }}</td>
+        <td class="tr"><strong>{{ fm(it.line_total) }}</strong></td>
+        <td class="tr {{ 'green' if lp is not none and lp>=0 else 'red' if lp is not none else '' }}">
+          {{ fm(lp) if lp is not none else '—' }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="3" class="tr">TOTAL</td>
+          <td class="tr">{{ fm(sel_sale.total_amount) }}</td>
+          <td class="tr">
+            {% set tp = namespace(v=0,all=true) %}
+            {% for it in sel_items %}
+              {% if it.unit_cost is not none %}{% set tp.v = tp.v + it.line_total - it.quantity*it.unit_cost %}
+              {% else %}{% set tp.all = false %}{% endif %}
+            {% endfor %}
+            <span class="{{ 'green' if tp.v>=0 else 'red' }}">{{ fm(tp.v) }}{{ '' if tp.all else '*' }}</span>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+{% else %}
+<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:9px;padding:20px;
+  text-align:center;color:#9ca3af;font-size:.88rem">
+  ← Click any sale row above to see its items here
+</div>
+{% endif %}
+{% endblock %}

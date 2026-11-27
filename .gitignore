@@ -1,0 +1,37 @@
+# Database — never commit live data
+pos.db
+*.db
+*.db-wal
+*.db-shm
+
+# Secrets — never commit these
+.env
+
+# Distribution builds
+dist/
+build/
+*.zip
+*.spec
+RetailPOS_Setup/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Backups
+backups/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Sensitive — config.py contains Supabase keys.
+# On Render, set these as environment variables instead.
+# Uncomment the line below if you ever push to a public repo:
+# config.py
