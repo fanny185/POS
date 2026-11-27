@@ -42,11 +42,10 @@ if not exist "%INSTALL_DIR%\.env" (
 :: ── 4. Create desktop shortcut ───────────────────────────────
 echo  [3/4] Creating desktop shortcut...
 set "PS_TMP=%TEMP%\retailpos_shortcut.ps1"
-set "SHORTCUT=C:\Users\Public\Desktop\RetailPOS.lnk"
 
-:: Write ps1 file line by line using >> to avoid parentheses issues
 echo $ws = New-Object -ComObject WScript.Shell > "%PS_TMP%"
-echo $sc = $ws.CreateShortcut('C:\Users\Public\Desktop\RetailPOS.lnk') >> "%PS_TMP%"
+echo $desktop = [Environment]::GetFolderPath('Desktop') >> "%PS_TMP%"
+echo $sc = $ws.CreateShortcut("$desktop\RetailPOS.lnk") >> "%PS_TMP%"
 echo $sc.TargetPath = 'C:\RetailPOS\RetailPOS.exe' >> "%PS_TMP%"
 echo $sc.WorkingDirectory = 'C:\RetailPOS' >> "%PS_TMP%"
 echo $sc.Description = 'RetailPOS Point of Sale System' >> "%PS_TMP%"
@@ -55,7 +54,10 @@ echo $sc.Save() >> "%PS_TMP%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%PS_TMP%"
 del "%PS_TMP%" >nul 2>&1
 
-if exist "%SHORTCUT%" (
+:: Check any desktop location
+if exist "%USERPROFILE%\Desktop\RetailPOS.lnk" (
+  echo        Shortcut created on Desktop.
+) else if exist "%USERPROFILE%\OneDrive\Desktop\RetailPOS.lnk" (
   echo        Shortcut created on Desktop.
 ) else (
   echo        Could not create shortcut - create it manually:
@@ -68,10 +70,10 @@ echo.
 set /p STARTUP=  Add RetailPOS to Windows startup so it opens automatically? (Y/N): 
 if /i "%STARTUP%"=="Y" (
   set "PS_TMP2=%TEMP%\retailpos_startup.ps1"
-  set "STARTLINK=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\RetailPOS.lnk"
 
   echo $ws = New-Object -ComObject WScript.Shell > "%PS_TMP2%"
-  echo $sc = $ws.CreateShortcut('%STARTLINK%') >> "%PS_TMP2%"
+  echo $startup = [Environment]::GetFolderPath('Startup') >> "%PS_TMP2%"
+  echo $sc = $ws.CreateShortcut("$startup\RetailPOS.lnk") >> "%PS_TMP2%"
   echo $sc.TargetPath = 'C:\RetailPOS\RetailPOS.exe' >> "%PS_TMP2%"
   echo $sc.WorkingDirectory = 'C:\RetailPOS' >> "%PS_TMP2%"
   echo $sc.Save() >> "%PS_TMP2%"
