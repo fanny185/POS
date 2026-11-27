@@ -890,6 +890,37 @@ _sync_label = tk.Label(
 )
 _sync_label.pack(side="right", padx=(0, 4))
 
+# ── Manual Sync Now button ────────────────────────────────────────────────
+def _manual_sync():
+    if not _SYNC_AVAILABLE:
+        messagebox.showinfo("Cloud Sync",
+            "Cloud sync is not configured.\n"
+            "Edit C:\\RetailPOS\\.env and add your Supabase credentials.",
+            parent=root)
+        return
+    if not _config.is_configured():
+        messagebox.showinfo("Cloud Sync",
+            "Supabase credentials are missing.\n"
+            "Edit C:\\RetailPOS\\.env and add SUPABASE_URL and SUPABASE_KEY.",
+            parent=root)
+        return
+    _sync_btn.config(text="⟳ Syncing…", state="disabled")
+    _sync.push_now()
+    root.after(2000, lambda: _sync_btn.config(text="⟳ Sync Now", state="normal"))
+
+_sync_btn = tk.Button(
+    nav_bar,
+    text="⟳ Sync Now",
+    command=_manual_sync,
+    relief="flat", bd=0,
+    padx=10, pady=11,
+    bg=CLR_DARK, fg="#60a5fa",
+    activebackground="#374151", activeforeground="white",
+    font=(FONT_FAMILY, 10),
+    cursor="hand2"
+)
+_sync_btn.pack(side="right", padx=2)
+
 
 def _update_sync_indicator():
     """Called from the sync background thread via root.after — thread-safe."""
@@ -934,8 +965,7 @@ def _open_sync_info(event=None):
         messagebox.showinfo(
             "Cloud Sync",
             "Cloud sync is not configured.\n\n"
-            "Edit  config.py  and add your Supabase URL and key.\n"
-            "See  setup_cloud.md  for instructions.",
+            "Edit  C:\\RetailPOS\\.env  and add your Supabase URL and key.",
             parent=root
         )
         return
@@ -1498,7 +1528,7 @@ def open_product_form(parent, product=None):
 
         cursor.execute("""
             SELECT product_id FROM products
-            WHERE LOWER(product_name) = LOWER(?) AND product_id != ?
+            WHERE TRIM(LOWER(product_name)) = TRIM(LOWER(?)) AND product_id != ?
         """, (name, product_id))
 
         if cursor.fetchone():

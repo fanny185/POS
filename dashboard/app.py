@@ -691,8 +691,8 @@ def product_add():
             if any(x<0 for x in [c,p,qt]): raise ValueError("Values cannot be negative.")
         except ValueError as e: error=str(e)
         else:
-            dup=q("SELECT product_id FROM products WHERE LOWER(product_name)=LOWER(?)",(name,))
-            if dup: error=f"A product named '{name}' already exists."
+            dup=q("SELECT product_id FROM products WHERE TRIM(LOWER(product_name))=TRIM(LOWER(?)) AND product_id!=COALESCE(?,0)",(name,-1,))
+            if dup: error=f"A product named '{name}' already exists (names are not case-sensitive)."
             else:
                 run("""INSERT INTO products
                            (product_name,quantity,selling_price,
@@ -741,8 +741,8 @@ def product_edit(pid):
             if any(x<0 for x in [c,p,qt]): raise ValueError("Values cannot be negative.")
         except ValueError as e: error=str(e)
         else:
-            dup=q("SELECT product_id FROM products WHERE LOWER(product_name)=LOWER(?) AND product_id!=?",(name,pid))
-            if dup: error=f"Another product named '{name}' already exists."
+            dup=q("SELECT product_id FROM products WHERE TRIM(LOWER(product_name))=TRIM(LOWER(?)) AND product_id!=?",(name,pid))
+            if dup: error=f"Another product named '{name}' already exists (names are not case-sensitive)."
             else:
                 run("UPDATE products SET product_name=?,quantity=?,selling_price=?,ordering_price=?,units_per_pack=?,synced=0 WHERE product_id=?",(name,qt,p,c,u,pid))
                 flash(f"✓ '{name}' updated.","success")

@@ -77,7 +77,19 @@
 <!-- Action buttons -->
 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
   <a href="{{ url_for('product_add') }}" class="btn btn-blue">➕ Add New Product</a>
+  <button onclick="manualSync(this)" class="btn btn-grey" id="sync-btn">⟳ Sync Now</button>
 </div>
+
+<script>
+function manualSync(btn) {
+  btn.textContent = '⟳ Syncing…';
+  btn.disabled = true;
+  fetch("{{ url_for('api_refresh') }}", {method:'POST', headers:{'Content-Type':'application/json'}})
+    .then(r => r.json())
+    .then(d => { window.location.reload(); })
+    .catch(() => { btn.textContent = '⟳ Sync Now'; btn.disabled = false; });
+}
+</script>
 
 <!-- Filter bar -->
 <form method="get" class="fbar" style="background:var(--th-bg);padding:9px 14px;border-radius:8px;border:1px solid var(--border)">
