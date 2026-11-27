@@ -23,6 +23,7 @@ _SECRET_KEY   = os.environ.get("DASHBOARD_SECRET_KEY", config.DASHBOARD_SECRET_K
 
 app = Flask(__name__)
 app.secret_key = _SECRET_KEY
+DASHBOARD_USERNAME = os.environ.get("DASHBOARD_USERNAME", config.DASHBOARD_USERNAME)
 DASHBOARD_PASSWORD = os.environ.get("DASHBOARD_PASSWORD", config.DASHBOARD_PASSWORD)
 LOW_STOCK = config.LOW_STOCK_THRESHOLD
 
@@ -298,10 +299,12 @@ def login_required(f):
 def login():
     err = None
     if request.method == "POST":
-        if request.form.get("password") == DASHBOARD_PASSWORD:
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        if username == DASHBOARD_USERNAME and password == DASHBOARD_PASSWORD:
             session["ok"] = True
             return redirect(url_for("home"))
-        err = "Incorrect password."
+        err = "Incorrect username or password."
     return render_template("login.html", err=err)
 
 @app.route("/logout", methods=["GET","POST"])

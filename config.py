@@ -23,7 +23,8 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
-DASHBOARD_PASSWORD  = os.environ.get("DASHBOARD_PASSWORD", "RetailPOS@2026")
+DASHBOARD_USERNAME   = os.environ.get("DASHBOARD_USERNAME",  "admin")
+DASHBOARD_PASSWORD   = os.environ.get("DASHBOARD_PASSWORD",  "RetailPOS@2026")
 DASHBOARD_SECRET_KEY = os.environ.get("DASHBOARD_SECRET_KEY", _secrets.token_hex(32))
 DASHBOARD_PORT      = int(os.environ.get("DASHBOARD_PORT", 5000))
 

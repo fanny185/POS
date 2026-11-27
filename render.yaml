@@ -5,6 +5,8 @@ services:
     buildCommand: "pip install flask werkzeug requests gunicorn"
     startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
     envVars:
+      - key: DASHBOARD_USERNAME
+        sync: false
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_KEY
