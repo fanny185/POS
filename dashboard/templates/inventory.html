@@ -129,7 +129,7 @@ function manualSync(btn) {
       </thead>
       <tbody>
       {% if not rows %}
-        <tr><td colspan="11" class="tc" style="padding:28px;color:#9ca3af">
+        <tr><td colspan="11" class="tc" style="padding:28px;color:var(--muted)">
           No products match your filter.</td></tr>
       {% endif %}
       {% for r in rows %}

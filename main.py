@@ -874,7 +874,7 @@ for _key, _label in NAV_ITEMS:
 tk.Label(
     nav_bar, text=f"  {STORE_NAME}  ",
     font=(FONT_FAMILY, 11, "bold"),
-    bg=CLR_DARK, fg="#9ca3af"
+    bg=CLR_DARK, fg=CLR_MUTED
 ).pack(side="left", padx=(20, 0))
 
 tk.Button(
@@ -900,7 +900,7 @@ _theme_btn = tk.Button(
     command=_toggle_theme,
     relief="flat", bd=0,
     padx=10, pady=11,
-    bg=CLR_DARK, fg="#9ca3af",
+    bg=CLR_DARK, fg=CLR_MUTED,
     activebackground="#374151", activeforeground="white",
     font=(FONT_FAMILY, 10),
     cursor="hand2"
@@ -914,7 +914,7 @@ _sync_label = tk.Label(
     nav_bar,
     text="",
     font=(FONT_FAMILY, 9, "bold"),
-    bg=CLR_DARK, fg="#9ca3af",
+    bg=CLR_DARK, fg=CLR_MUTED,
     cursor="hand2",
     padx=8, pady=4
 )
@@ -981,7 +981,7 @@ tk.Button(
     command=open_settings,
     relief="flat", bd=0,
     padx=10, pady=11,
-    bg=CLR_DARK, fg="#9ca3af",
+    bg=CLR_DARK, fg=CLR_MUTED,
     activebackground="#374151", activeforeground="white",
     font=(FONT_FAMILY, 10),
     cursor="hand2"
@@ -1567,8 +1567,8 @@ def open_product_form(parent, product=None):
                 "Fill in pack size, ordering price and selling price\n"
                 "to see profit automatically."
             )
-            preview_card.config(bg="#f9fafb")
-            preview_label.config(fg=CLR_MUTED, bg="#f9fafb")
+            preview_card.config(bg=CLR_CARD)
+            preview_label.config(fg=CLR_MUTED, bg=CLR_CARD)
             return
 
         unit_cost   = cost / units
@@ -1821,7 +1821,7 @@ def build_inventory(window):
     """Fill the Inventory page (a frame inside the main window)."""
 
     # ── Action bar — packed FIRST so it anchors to bottom correctly ───────
-    act_bar = tk.Frame(window, bg="#f1f5f9",
+    act_bar = tk.Frame(window, bg=CLR_BG,
                        highlightbackground=CLR_BORDER, highlightthickness=1)
     act_bar.pack(fill="x", side="bottom")
 
@@ -1904,20 +1904,20 @@ def build_inventory(window):
              font=(FONT_FAMILY, 9), fg=CLR_MUTED, bg=CLR_BG).pack(side="left")
 
     # ── Search / filter bar ───────────────────────────────────────────────
-    search_frame = tk.Frame(window, bg="#f1f5f9",
+    search_frame = tk.Frame(window, bg=CLR_BG,
                             highlightbackground=CLR_BORDER,
                             highlightthickness=1)
     search_frame.pack(fill="x", padx=14, pady=(0, 6), side="top")
 
     tk.Label(search_frame, text="  🔍  Search:",
-             font=FONT_NORMAL, bg="#f1f5f9", fg=CLR_DARK).pack(
+             font=FONT_NORMAL, bg=CLR_BG, fg=CLR_DARK).pack(
         side="left", padx=(4, 0), pady=7)
     search_var   = tk.StringVar()
     search_entry = ttk.Entry(search_frame, textvariable=search_var, width=28)
     search_entry.pack(side="left", padx=6, pady=7)
 
     tk.Label(search_frame, text="Filter:",
-             font=FONT_NORMAL, bg="#f1f5f9", fg=CLR_DARK).pack(
+             font=FONT_NORMAL, bg=CLR_BG, fg=CLR_DARK).pack(
         side="left", padx=(12, 2))
     filter_var   = tk.StringVar(value="All products")
     filter_combo = ttk.Combobox(
@@ -1935,7 +1935,7 @@ def build_inventory(window):
 
     shown_var = tk.StringVar()
     tk.Label(search_frame, textvariable=shown_var,
-             font=(FONT_FAMILY, 10), bg="#f1f5f9",
+             font=(FONT_FAMILY, 10), bg=CLR_BG,
              fg=CLR_MUTED).pack(side="right", padx=12)
 
     # ── Product table — expands to fill remaining space ───────────────────
@@ -2131,9 +2131,9 @@ def build_inventory(window):
     # ── Populate action bar buttons ───────────────────────────────────────
     # Lay out in two rows on tablet so nothing gets cut off.
     if IS_TABLET:
-        row1 = tk.Frame(act_bar, bg="#f1f5f9")
+        row1 = tk.Frame(act_bar, bg=CLR_BG)
         row1.pack(fill="x", padx=6, pady=(6, 2))
-        row2 = tk.Frame(act_bar, bg="#f1f5f9")
+        row2 = tk.Frame(act_bar, bg=CLR_BG)
         row2.pack(fill="x", padx=6, pady=(0, 6))
         btn_rows = [
             [   # top row — most-used actions
@@ -2183,7 +2183,7 @@ def build_point_of_sale(pos_window):
 
     # ── Pack bottom frames FIRST so expand=True on the cart doesn't hide them
     # Bottom action bar — Checkout + cart controls
-    act_bar = tk.Frame(pos_window, bg="#f1f5f9",
+    act_bar = tk.Frame(pos_window, bg=CLR_BG,
                        highlightbackground=CLR_BORDER, highlightthickness=1)
     act_bar.pack(fill="x", side="bottom")
 
@@ -2207,24 +2207,24 @@ def build_point_of_sale(pos_window):
              bg=CLR_DARK, fg="#6ee7b7").pack(side="right", padx=16)
 
     # ── Product search / add row ───────────────────────────────────────────
-    top_frame = tk.Frame(pos_window, bg="#f1f5f9",
+    top_frame = tk.Frame(pos_window, bg=CLR_BG,
                          highlightbackground=CLR_BORDER, highlightthickness=1)
     top_frame.pack(fill="x", side="top", padx=14, pady=(8, 2))
 
     # Row 1: Search
     tk.Label(top_frame, text="  Search:", font=FONT_NORMAL,
-             bg="#f1f5f9", fg=CLR_MUTED).grid(
+             bg=CLR_BG, fg=CLR_MUTED).grid(
         row=0, column=0, padx=(8, 4), pady=(8, 4), sticky="w")
     search_var   = tk.StringVar()
     search_entry = ttk.Entry(top_frame, textvariable=search_var, width=32)
     search_entry.grid(row=0, column=1, padx=4, pady=(8, 4), sticky="w")
     tk.Label(top_frame, text="(type to filter)",
-             font=FONT_SMALL, bg="#f1f5f9", fg=CLR_MUTED).grid(
+             font=FONT_SMALL, bg=CLR_BG, fg=CLR_MUTED).grid(
         row=0, column=2, padx=4, sticky="w")
 
     # Row 2: Product + Qty + Add
     tk.Label(top_frame, text="  Product:", font=FONT_NORMAL,
-             bg="#f1f5f9", fg=CLR_DARK).grid(
+             bg=CLR_BG, fg=CLR_DARK).grid(
         row=1, column=0, padx=(8, 4), pady=(0, 8), sticky="w")
     product_var   = tk.StringVar()
     product_combo = ttk.Combobox(
@@ -2232,7 +2232,7 @@ def build_point_of_sale(pos_window):
     product_combo.grid(row=1, column=1, padx=4, pady=(0, 8), sticky="w")
 
     tk.Label(top_frame, text="Qty:", font=FONT_NORMAL,
-             bg="#f1f5f9", fg=CLR_DARK).grid(
+             bg=CLR_BG, fg=CLR_DARK).grid(
         row=1, column=2, padx=(12, 4), pady=(0, 8))
     quantity_entry = ttk.Entry(top_frame, width=8)
     quantity_entry.insert(0, "1")
@@ -2279,7 +2279,7 @@ def build_point_of_sale(pos_window):
     checkout_btn.pack(side="right", padx=12, pady=6, ipadx=10, ipady=6)
 
     # ── Cart controls (action bar, already reserved) ──────────────────────
-    left_btns = tk.Frame(act_bar, bg="#f1f5f9")
+    left_btns = tk.Frame(act_bar, bg=CLR_BG)
     left_btns.pack(side="left", padx=4, pady=6)
 
     for text, style, cmd in [
@@ -2292,7 +2292,7 @@ def build_point_of_sale(pos_window):
         ttk.Button(left_btns, text=text, style=style,
                    command=cmd).pack(side="left", padx=3)
 
-    right_btns = tk.Frame(act_bar, bg="#f1f5f9")
+    right_btns = tk.Frame(act_bar, bg=CLR_BG)
     right_btns.pack(side="right", padx=4, pady=6)
 
     for text, cmd in [
@@ -3040,7 +3040,7 @@ def build_reports(window):
 
     # ── Action bar (bottom) ───────────────────────────────────────────────
     # Pack BEFORE the body so it anchors to the bottom correctly.
-    act_bar = tk.Frame(window, bg="#f1f5f9",
+    act_bar = tk.Frame(window, bg=CLR_BG,
                        highlightbackground=CLR_BORDER, highlightthickness=1)
     act_bar.pack(fill="x", side="bottom")
 
@@ -3117,20 +3117,20 @@ def build_reports(window):
     notebook.add(sales_tab, text="  Sales  ")
 
     # search/filter toolbar inside Sales tab
-    stool = tk.Frame(sales_tab, bg="#f9fafb",
+    stool = tk.Frame(sales_tab, bg=CLR_CARD,
                      highlightbackground=CLR_BORDER, highlightthickness=1)
     stool.pack(fill="x", side="top", padx=4, pady=(4, 2))
 
     tk.Label(stool, text="Search:", font=FONT_SMALL,
-             bg="#f9fafb", fg=CLR_MUTED).pack(side="left", padx=(8, 2), pady=6)
+             bg=CLR_CARD, fg=CLR_MUTED).pack(side="left", padx=(8, 2), pady=6)
     sale_search_var = tk.StringVar()
     ttk.Entry(stool, textvariable=sale_search_var, width=24).pack(
         side="left", padx=(0, 4))
     tk.Label(stool, text="(receipt # or product)",
-             font=FONT_SMALL, bg="#f9fafb", fg=CLR_MUTED).pack(side="left")
+             font=FONT_SMALL, bg=CLR_CARD, fg=CLR_MUTED).pack(side="left")
 
     tk.Label(stool, text="Status:", font=FONT_SMALL,
-             bg="#f9fafb", fg=CLR_MUTED).pack(side="left", padx=(16, 2))
+             bg=CLR_CARD, fg=CLR_MUTED).pack(side="left", padx=(16, 2))
     status_var   = tk.StringVar(value="All")
     status_combo = ttk.Combobox(stool, textvariable=status_var,
                                 state="readonly", width=11,
@@ -3169,17 +3169,17 @@ def build_reports(window):
     detail_outer.pack(fill="x", padx=4, pady=(2, 4))
     detail_outer.pack_propagate(False)   # keep the fixed height
 
-    detail_hdr = tk.Frame(detail_outer, bg="#f1f5f9")
+    detail_hdr = tk.Frame(detail_outer, bg=CLR_BG)
     detail_hdr.pack(fill="x")
 
     detail_title_var = tk.StringVar()
     tk.Label(detail_hdr, textvariable=detail_title_var,
-             font=FONT_BOLD, bg="#f1f5f9", fg=CLR_DARK,
+             font=FONT_BOLD, bg=CLR_BG, fg=CLR_DARK,
              anchor="w").pack(side="left", padx=10, pady=5)
 
     detail_pay_var = tk.StringVar()
     tk.Label(detail_hdr, textvariable=detail_pay_var,
-             font=FONT_SMALL, bg="#f1f5f9", fg=CLR_MUTED,
+             font=FONT_SMALL, bg=CLR_BG, fg=CLR_MUTED,
              anchor="e").pack(side="right", padx=10, pady=5)
 
     detail_tf, detail_table = make_table(
@@ -3197,7 +3197,7 @@ def build_reports(window):
     trend_tab = ttk.Frame(notebook)
     notebook.add(trend_tab, text="  Trend  ")
 
-    trend_toolbar = tk.Frame(trend_tab, bg="#f9fafb",
+    trend_toolbar = tk.Frame(trend_tab, bg=CLR_CARD,
                              highlightbackground=CLR_BORDER,
                              highlightthickness=1)
     trend_toolbar.pack(fill="x", side="top")
@@ -3205,17 +3205,17 @@ def build_reports(window):
     trend_info_var = tk.StringVar(
         value="Hover over a bar to see figures for that period.")
     tk.Label(trend_toolbar, textvariable=trend_info_var,
-             font=FONT_BOLD, bg="#f9fafb", fg=CLR_DARK,
+             font=FONT_BOLD, bg=CLR_CARD, fg=CLR_DARK,
              anchor="w").pack(side="left", padx=10, pady=6)
 
-    leg = tk.Frame(trend_toolbar, bg="#f9fafb")
+    leg = tk.Frame(trend_toolbar, bg=CLR_CARD)
     leg.pack(side="right", padx=12)
     tk.Frame(leg, bg=CLR_BLUE,  width=14, height=14).pack(side="left")
     tk.Label(leg, text=" Revenue", font=FONT_SMALL,
-             bg="#f9fafb", fg=CLR_MUTED).pack(side="left", padx=(0, 12))
+             bg=CLR_CARD, fg=CLR_MUTED).pack(side="left", padx=(0, 12))
     tk.Frame(leg, bg=CLR_GREEN, width=14, height=14).pack(side="left")
     tk.Label(leg, text=" Profit", font=FONT_SMALL,
-             bg="#f9fafb", fg=CLR_MUTED).pack(side="left")
+             bg=CLR_CARD, fg=CLR_MUTED).pack(side="left")
 
     trend_canvas = tk.Canvas(trend_tab, bg=CLR_CARD, highlightthickness=0)
     trend_canvas.pack(fill="both", expand=True, padx=6, pady=6)
@@ -3944,7 +3944,7 @@ def build_reports(window):
         side="left", fill="y", padx=6, pady=6)
     tk.Label(act_bar, text="Selected product →",
              font=FONT_SMALL, fg=CLR_MUTED,
-             bg="#f1f5f9").pack(side="left", padx=(4, 2))
+             bg=CLR_BG).pack(side="left", padx=(4, 2))
     _abtn("📦 Restock",       "TButton",          restock_from_report)
     _abtn("🔍 In Inventory",  "TButton",          open_in_inventory)
     _abtn("💳 Sell in POS",   "Success.TButton",  sell_from_report)
@@ -4002,7 +4002,7 @@ def build_home():
 
     greet_var = tk.StringVar()
     tk.Label(home_page, textvariable=greet_var, font=FONT_NORMAL,
-             bg=CLR_BG, fg="#374151", anchor="w").pack(fill="x", padx=26)
+             bg=CLR_BG, fg=CLR_TEXT, anchor="w").pack(fill="x", padx=26)
 
     ttk.Separator(home_page, orient="horizontal").pack(
         fill="x", padx=20, pady=8)

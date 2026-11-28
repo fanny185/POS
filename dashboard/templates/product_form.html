@@ -2,6 +2,20 @@
 {% block title %}{{ 'Edit Product' if editing else 'Add New Product' }} – RetailPOS{% endblock %}
 {% block content %}
 
+<style>
+.pf-input{width:100%;padding:9px 12px;border:1px solid var(--input-bdr);
+  border-radius:7px;font-size:.95rem;background:var(--input-bg);
+  color:var(--input-fg);font-family:inherit;outline:none;transition:border .15s}
+.pf-input:focus{border-color:var(--blue);box-shadow:0 0 0 2px color-mix(in srgb,var(--blue) 20%,transparent)}
+.pf-hint{font-size:.78rem;color:var(--muted);margin-top:4px}
+.pf-label{font-weight:700;font-size:.88rem;display:block;margin-bottom:5px;color:var(--text-soft)}
+.preview-card{border-radius:9px;padding:14px 18px;margin-bottom:16px;
+  border:1px solid var(--border);background:var(--th-bg);transition:background .2s,border-color .2s}
+.preview-card.profit{background:color-mix(in srgb,var(--green) 10%,var(--card));border-color:var(--green)}
+.preview-card.loss{background:color-mix(in srgb,var(--red) 10%,var(--card));border-color:var(--red)}
+.preview-lbl{color:var(--muted);font-size:.75rem}
+</style>
+
 <div style="max-width:580px;margin:0 auto">
 
 <div class="h1">
@@ -10,80 +24,50 @@
 </div>
 
 {% if error %}
-<div style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;
-     padding:11px 15px;border-radius:8px;margin-bottom:16px;font-size:.9rem">
-  ⚠ {{ error }}
-</div>
+<div class="alert alert-r">⚠ {{ error }}</div>
 {% endif %}
 
 <form method="post" id="pform">
   <input type="hidden" name="action" id="form_action" value="save"/>
 
-  <!-- Product Name -->
   <div class="card" style="margin-bottom:14px">
     <div class="card-hdr"><h2>Product Details</h2></div>
     <div class="card-body">
 
       <div style="margin-bottom:14px">
-        <label style="font-weight:700;font-size:.88rem;display:block;margin-bottom:5px">
-          Product Name *
-        </label>
+        <label class="pf-label">Product Name *</label>
         <input type="text" name="name" value="{{ f.name }}" required
-               placeholder="e.g. Coca Cola 500ml"
-               style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:7px;font-size:.95rem"/>
+               placeholder="e.g. Coca Cola 500ml" class="pf-input"/>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
 
         <div>
-          <label style="font-weight:700;font-size:.88rem;display:block;margin-bottom:5px">
-            Units per Pack *
-          </label>
+          <label class="pf-label">Units per Pack *</label>
           <input type="number" name="units" id="f_units" value="{{ f.units }}"
-                 min="1" step="1" required
-                 style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:7px;font-size:.95rem"
-                 oninput="updatePreview()"/>
-          <div style="font-size:.78rem;color:#6b7280;margin-top:4px">
-            How many single items in one pack (1 = no packs)
-          </div>
+                 min="1" step="1" required class="pf-input" oninput="updatePreview()"/>
+          <div class="pf-hint">How many single items in one pack (1 = no packs)</div>
         </div>
 
         <div>
-          <label style="font-weight:700;font-size:.88rem;display:block;margin-bottom:5px">
-            Quantity in Stock *
-          </label>
+          <label class="pf-label">Quantity in Stock *</label>
           <input type="number" name="quantity" value="{{ f.quantity }}"
-                 min="0" step="1" required
-                 style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:7px;font-size:.95rem"/>
-          <div style="font-size:.78rem;color:#6b7280;margin-top:4px">
-            Total single units on hand (e.g. 2 packs × 12 = 24)
-          </div>
+                 min="0" step="1" required class="pf-input"/>
+          <div class="pf-hint">Total single units on hand</div>
         </div>
 
         <div>
-          <label style="font-weight:700;font-size:.88rem;display:block;margin-bottom:5px">
-            Ordering Price (per pack) *
-          </label>
+          <label class="pf-label">Ordering Price (per pack) *</label>
           <input type="number" name="cost" id="f_cost" value="{{ f.cost }}"
-                 min="0" step="0.01" required
-                 style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:7px;font-size:.95rem"
-                 oninput="updatePreview()"/>
-          <div style="font-size:.78rem;color:#6b7280;margin-top:4px">
-            What you pay your supplier for one pack
-          </div>
+                 min="0" step="0.01" required class="pf-input" oninput="updatePreview()"/>
+          <div class="pf-hint">What you pay your supplier for one pack</div>
         </div>
 
         <div>
-          <label style="font-weight:700;font-size:.88rem;display:block;margin-bottom:5px">
-            Selling Price (per single unit) *
-          </label>
+          <label class="pf-label">Selling Price (per single unit) *</label>
           <input type="number" name="price" id="f_price" value="{{ f.price }}"
-                 min="0" step="0.01" required
-                 style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:7px;font-size:.95rem"
-                 oninput="updatePreview()"/>
-          <div style="font-size:.78rem;color:#6b7280;margin-top:4px">
-            What the customer pays for one item
-          </div>
+                 min="0" step="0.01" required class="pf-input" oninput="updatePreview()"/>
+          <div class="pf-hint">What the customer pays for one item</div>
         </div>
 
       </div>
@@ -91,33 +75,28 @@
   </div>
 
   <!-- Profit preview card -->
-  <div id="preview-card" style="border-radius:9px;padding:14px 18px;
-       margin-bottom:16px;border:1px solid;
-       background:{{ '#fff1f2' if preview and preview.is_loss else '#f0fdf4' }};
-       border-color:{{ '#fca5a5' if preview and preview.is_loss else '#86efac' }}">
+  <div id="preview-card" class="preview-card {{ 'loss' if preview and preview.is_loss else ('profit' if preview else '') }}">
     {% if preview %}
     <div style="font-weight:700;font-size:.85rem;margin-bottom:6px;
-         color:{{ '#991b1b' if preview.is_loss else '#166534' }}">
-      {{ '⚠ Selling below cost — you will lose money on every sale' if preview.is_loss
-         else '✓ Profit preview' }}
+         color:{{ 'var(--red)' if preview.is_loss else 'var(--green)' }}">
+      {{ '⚠ Selling below cost — you will lose money on every sale' if preview.is_loss else '✓ Profit preview' }}
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:.88rem">
-      <div><div style="color:#6b7280;font-size:.75rem">Cost per unit</div>
-           <strong>{{ preview.unit_cost }}</strong></div>
-      <div><div style="color:#6b7280;font-size:.75rem">Profit per unit</div>
-           <strong style="color:{{ '#991b1b' if preview.is_loss else '#166534' }}">
+      <div><div class="preview-lbl">Cost per unit</div>
+           <strong style="color:var(--text)">{{ preview.unit_cost }}</strong></div>
+      <div><div class="preview-lbl">Profit per unit</div>
+           <strong style="color:{{ 'var(--red)' if preview.is_loss else 'var(--green)' }}">
              {{ preview.unit_profit }} ({{ preview.margin }})</strong></div>
-      <div><div style="color:#6b7280;font-size:.75rem">Profit per pack</div>
-           <strong>{{ preview.pack_profit }}</strong></div>
+      <div><div class="preview-lbl">Profit per pack</div>
+           <strong style="color:var(--text)">{{ preview.pack_profit }}</strong></div>
     </div>
     {% else %}
-    <div style="color:#6b7280;font-size:.85rem" id="preview-hint">
+    <div style="color:var(--muted);font-size:.85rem" id="preview-hint">
       Fill in pack size, ordering price, and selling price to see profit automatically.
     </div>
     {% endif %}
   </div>
 
-  <!-- Buttons -->
   <div style="display:flex;gap:10px">
     <button type="submit" class="btn btn-blue"
             onclick="document.getElementById('form_action').value='save'">
@@ -139,29 +118,28 @@ function updatePreview() {
 
   if (isNaN(u)||isNaN(c)||isNaN(p)||u<1) {
     if(hint) hint.textContent = 'Fill in pack size, ordering price, and selling price to see profit.';
-    card.style.background='#f9fafb'; card.style.borderColor='#e5e7eb';
+    card.className = 'preview-card';
     return;
   }
-  var uc = c/u;
-  var up = p - uc;
+  var uc = c/u, up = p - uc;
   var margin = p>0 ? (up/p*100).toFixed(1)+'%' : '—';
   var pp = (p*u - c).toFixed(2);
   var isLoss = up < 0;
 
-  card.style.background = isLoss ? '#fff1f2' : '#f0fdf4';
-  card.style.borderColor = isLoss ? '#fca5a5' : '#86efac';
+  card.className = 'preview-card ' + (isLoss ? 'loss' : 'profit');
   card.innerHTML =
     '<div style="font-weight:700;font-size:.85rem;margin-bottom:6px;color:' +
-    (isLoss?'#991b1b':'#166534') + '">' +
+    (isLoss?'var(--red)':'var(--green)') + '">' +
     (isLoss ? '⚠ Selling below cost — you will lose money on every sale' : '✓ Profit preview') +
     '</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:.88rem">' +
-    '<div><div style="color:#6b7280;font-size:.75rem">Cost per unit</div><strong>'+uc.toFixed(4).replace(/0+$/,'').replace(/\.$/,'')+'</strong></div>' +
-    '<div><div style="color:#6b7280;font-size:.75rem">Profit per unit</div><strong style="color:'+(isLoss?'#991b1b':'#166534')+'">'+
+    '<div><div class="preview-lbl">Cost per unit</div><strong style="color:var(--text)">'+
+    uc.toFixed(4).replace(/0+$/,'').replace(/\.$/,'')+'</strong></div>' +
+    '<div><div class="preview-lbl">Profit per unit</div><strong style="color:'+
+    (isLoss?'var(--red)':'var(--green)')+'">'+
     up.toFixed(4).replace(/0+$/,'').replace(/\.$/,'') + ' (' + margin + ')</strong></div>' +
-    '<div><div style="color:#6b7280;font-size:.75rem">Profit per pack</div><strong>'+pp+'</strong></div>' +
+    '<div><div class="preview-lbl">Profit per pack</div><strong style="color:var(--text)">'+pp+'</strong></div>' +
     '</div>';
 }
-// run on load if values exist
 updatePreview();
 </script>
 {% endblock %}

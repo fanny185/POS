@@ -80,10 +80,10 @@
       <span class="kpi-lbl">Stock Alerts</span>
     </div>
     <div class="kpi-val {{ 'red' if out_n else ('green' if not low_n else '') }}"
-         style="{{ 'color:#d97706' if (not out_n and low_n) else '' }}">
+         style="{{ 'color:var(--amber)' if (not out_n and low_n) else '' }}">
       {{ out_n + low_n }}</div>
     <div class="kpi-sub {{ 'muted' if not (out_n+low_n) else '' }}"
-         style="{{ 'color:#d97706' if low_n and not out_n else '' }}">
+         style="{{ 'color:var(--amber)' if low_n and not out_n else '' }}">
       {{ out_n ~ ' out  |  ' ~ low_n ~ ' low' if (out_n+low_n) else 'All stocked up ✓' }}
     </div>
   </div>
