@@ -197,7 +197,21 @@ cursor.execute("""
 cursor.execute(
     "INSERT OR IGNORE INTO settings (key,value) VALUES ('low_stock_threshold','5')"
 )
+# Default login credentials stored as SHA-256 hash (username=admin, password=admin1234)
+import hashlib as _hashlib
+_default_pw_hash = _hashlib.sha256(b"admin1234").hexdigest()
+cursor.execute(
+    "INSERT OR IGNORE INTO settings (key,value) VALUES ('app_username','admin')"
+)
+cursor.execute(
+    "INSERT OR IGNORE INTO settings (key,value) VALUES ('app_password_hash',?)",
+    (_default_pw_hash,)
+)
 connection.commit()
+
+
+def _hash_pw(password):
+    return _hashlib.sha256(password.encode()).hexdigest()
 
 
 def get_setting(key, default=None):
@@ -968,13 +982,90 @@ def open_settings(parent=None):
         messagebox.showinfo("Settings saved",
             f"Low stock threshold set to {v} units.", parent=parent)
 
+    ttk.Separator(win, orient="horizontal").pack(fill="x", padx=20, pady=(8,0))
+
+    # ── Change credentials section ───────────────────────────────────────
+    tk.Label(win, text="Change Login Credentials",
+             font=FONT_BOLD, bg=CLR_BG, fg=CLR_TEXT).pack(
+        anchor="w", padx=24, pady=(12, 4))
+
+    cred_frame = tk.Frame(win, bg=CLR_BG)
+    cred_frame.pack(fill="x", padx=24, pady=4)
+
+    tk.Label(cred_frame, text="New username",
+             font=FONT_NORMAL, bg=CLR_BG, fg=CLR_TEXT).grid(
+        row=0, column=0, sticky="w", pady=4)
+    uname_var = tk.StringVar(value=get_setting("app_username", "admin"))
+    ttk.Entry(cred_frame, textvariable=uname_var, width=22).grid(
+        row=0, column=1, padx=12, sticky="w")
+
+    tk.Label(cred_frame, text="New password",
+             font=FONT_NORMAL, bg=CLR_BG, fg=CLR_TEXT).grid(
+        row=1, column=0, sticky="w", pady=4)
+    pw_var = tk.StringVar()
+    ttk.Entry(cred_frame, textvariable=pw_var, show="*", width=22).grid(
+        row=1, column=1, padx=12, sticky="w")
+
+    tk.Label(cred_frame, text="Confirm password",
+             font=FONT_NORMAL, bg=CLR_BG, fg=CLR_TEXT).grid(
+        row=2, column=0, sticky="w", pady=4)
+    pw2_var = tk.StringVar()
+    ttk.Entry(cred_frame, textvariable=pw2_var, show="*", width=22).grid(
+        row=2, column=1, padx=12, sticky="w")
+
+    tk.Label(win, text="Leave password blank to keep current password.",
+             font=FONT_SMALL, bg=CLR_BG, fg=CLR_MUTED).pack(
+        anchor="w", padx=24, pady=(0, 4))
+
     btn_row = tk.Frame(win, bg=CLR_BG)
     btn_row.pack(pady=(4, 16))
-    ttk.Button(btn_row, text="Save", style="Success.TButton",
+
+    def save():
+        global LOW_STOCK_LEVEL
+        # Validate low stock
+        try:
+            v = int(low_var.get().strip())
+            if v < 1:
+                raise ValueError
+        except ValueError:
+            err_var.set("Low stock threshold must be a whole number ≥ 1")
+            return
+
+        # Validate credentials
+        new_uname = uname_var.get().strip()
+        new_pw    = pw_var.get()
+        new_pw2   = pw2_var.get()
+        if not new_uname:
+            err_var.set("Username cannot be empty.")
+            return
+        if new_pw or new_pw2:
+            if len(new_pw) < 4:
+                err_var.set("Password must be at least 4 characters.")
+                return
+            if new_pw != new_pw2:
+                err_var.set("Passwords do not match.")
+                return
+
+        # Save low stock
+        LOW_STOCK_LEVEL = v
+        save_setting("low_stock_threshold", v)
+        notify_products_changed()
+
+        # Save credentials
+        save_setting("app_username", new_uname)
+        if new_pw:
+            save_setting("app_password_hash", _hash_pw(new_pw))
+
+        win.destroy()
+        msg = f"Settings saved.\nLow stock threshold: {v} units."
+        if new_pw:
+            msg += f"\nLogin credentials updated."
+        messagebox.showinfo("Settings saved", msg, parent=parent)
+
+    ttk.Button(btn_row, text="Save All", style="Success.TButton",
                command=save).pack(side="left", padx=8)
     ttk.Button(btn_row, text="Cancel",
                command=win.destroy).pack(side="left", padx=8)
-
 
 tk.Button(
     nav_bar, text="⚙ Settings",
@@ -4359,11 +4450,112 @@ build_home()
 root.protocol("WM_DELETE_WINDOW", close_application)
 bind_navigation_keys(root)
 
+
+def show_login():
+    """Show a login dialog before the main window. Returns True if authenticated."""
+    t = _THEMES[_current_theme["name"]]
+
+    login_win = tk.Toplevel()
+    login_win.title("RetailPOS — Sign In")
+    login_win.resizable(False, False)
+    login_win.configure(bg=t["bg"])
+    login_win.grab_set()
+
+    # Centre on screen
+    login_win.update_idletasks()
+    w, h = 360, 340
+    sw = login_win.winfo_screenwidth()
+    sh = login_win.winfo_screenheight()
+    login_win.geometry(f"{w}x{h}+{(sw-w)//2}+{(sh-h)//2}")
+
+    # Hide main window until logged in
+    root.withdraw()
+
+    authenticated = {"ok": False}
+    attempts      = {"n": 0}
+
+    # Header
+    tk.Label(login_win, text="📊", font=(FONT_FAMILY, 36),
+             bg=t["bg"]).pack(pady=(28, 2))
+    tk.Label(login_win, text=STORE_NAME,
+             font=(FONT_FAMILY, 13, "bold"),
+             bg=t["bg"], fg=t["text"]).pack()
+    tk.Label(login_win, text="Sign in to continue",
+             font=FONT_SMALL, bg=t["bg"], fg=t["muted"]).pack(pady=(2, 18))
+
+    frame = tk.Frame(login_win, bg=t["bg"])
+    frame.pack(fill="x", padx=36)
+
+    # Username
+    tk.Label(frame, text="Username", font=FONT_NORMAL,
+             bg=t["bg"], fg=t["text"], anchor="w").pack(fill="x")
+    uname_var = tk.StringVar()
+    uname_entry = ttk.Entry(frame, textvariable=uname_var, width=28)
+    uname_entry.pack(fill="x", pady=(3, 10))
+
+    # Password
+    tk.Label(frame, text="Password", font=FONT_NORMAL,
+             bg=t["bg"], fg=t["text"], anchor="w").pack(fill="x")
+    pw_var   = tk.StringVar()
+    pw_entry = ttk.Entry(frame, textvariable=pw_var, show="*", width=28)
+    pw_entry.pack(fill="x", pady=(3, 6))
+
+    err_var = tk.StringVar()
+    err_lbl = tk.Label(frame, textvariable=err_var, font=FONT_SMALL,
+                       bg=t["bg"], fg=t["red"], wraplength=280)
+    err_lbl.pack(fill="x", pady=(0, 8))
+
+    def attempt_login(event=None):
+        uname  = uname_var.get().strip()
+        pw     = pw_var.get()
+        stored_user = get_setting("app_username", "admin")
+        stored_hash = get_setting("app_password_hash", _hash_pw("admin1234"))
+
+        if uname == stored_user and _hash_pw(pw) == stored_hash:
+            authenticated["ok"] = True
+            login_win.destroy()
+        else:
+            attempts["n"] += 1
+            pw_var.set("")
+            if attempts["n"] >= 5:
+                err_var.set("Too many failed attempts. The application will close.")
+                login_win.after(2000, lambda: (login_win.destroy(), root.destroy()))
+            else:
+                remaining = 5 - attempts["n"]
+                err_var.set(
+                    f"Incorrect username or password. "
+                    f"{remaining} attempt{'s' if remaining != 1 else ''} remaining."
+                )
+            pw_entry.focus_set()
+
+    ttk.Button(frame, text="Sign In", style="Accent.TButton",
+               command=attempt_login).pack(fill="x", pady=(0, 4))
+
+    login_win.bind("<Return>", attempt_login)
+    uname_entry.focus_set()
+    login_win.wait_window()
+
+    if authenticated["ok"]:
+        root.deiconify()   # show main window
+        return True
+    else:
+        try:
+            root.destroy()
+        except Exception:
+            pass
+        return False
+
+
 # Start cloud sync (runs in background thread; harmless if not configured)
 if _SYNC_AVAILABLE:
     _sync.on_status_change(_on_sync_status_change)
     _sync.start()
     _update_sync_indicator()   # set initial label state
+
+# Show login before anything else
+if not show_login():
+    import sys
+    sys.exit(0)
 
 go_to("home")
 # Start daily backup scheduler (runs first backup 30s after launch)
