@@ -187,6 +187,36 @@ add_column_if_missing("products", "ordering_price",  "REAL")
 add_column_if_missing("products", "units_per_pack",  "INTEGER NOT NULL DEFAULT 1")
 add_column_if_missing("sale_items", "unit_cost",     "REAL")
 
+# ── Settings table ────────────────────────────────────────────────────────────
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS settings (
+        key   TEXT PRIMARY KEY,
+        value TEXT NOT NULL
+    )
+""")
+cursor.execute(
+    "INSERT OR IGNORE INTO settings (key,value) VALUES ('low_stock_threshold','5')"
+)
+connection.commit()
+
+
+def get_setting(key, default=None):
+    cursor.execute("SELECT value FROM settings WHERE key=?", (key,))
+    row = cursor.fetchone()
+    return row[0] if row else default
+
+
+def save_setting(key, value):
+    cursor.execute(
+        "INSERT OR REPLACE INTO settings (key,value) VALUES (?,?)",
+        (key, str(value))
+    )
+    connection.commit()
+
+
+# Reload LOW_STOCK_LEVEL from settings now that the DB is ready
+LOW_STOCK_LEVEL = int(get_setting("low_stock_threshold", LOW_STOCK_LEVEL))
+
 connection.commit()
 
 
@@ -891,6 +921,73 @@ _sync_label = tk.Label(
 _sync_label.pack(side="right", padx=(0, 4))
 
 # ── Manual Sync Now button ────────────────────────────────────────────────
+# ── Settings popup ───────────────────────────────────────────────────────────
+def open_settings(parent=None):
+    parent = parent or root
+    win = tk.Toplevel(parent)
+    win.title("Settings")
+    win.resizable(False, False)
+    win.grab_set()
+    win.configure(bg=CLR_BG)
+    t = _THEMES[_current_theme["name"]]
+
+    tk.Label(win, text="⚙  Settings", font=FONT_HEADING,
+             bg=CLR_BG, fg=CLR_DARK).pack(anchor="w", padx=24, pady=(16,4))
+    ttk.Separator(win, orient="horizontal").pack(fill="x", padx=20, pady=4)
+
+    frame = tk.Frame(win, bg=CLR_BG)
+    frame.pack(fill="x", padx=24, pady=8)
+
+    # Low stock threshold
+    tk.Label(frame, text="Low stock alert when quantity ≤",
+             font=FONT_NORMAL, bg=CLR_BG, fg=CLR_TEXT).grid(
+        row=0, column=0, sticky="w", pady=6)
+    low_var = tk.StringVar(value=str(LOW_STOCK_LEVEL))
+    ttk.Entry(frame, textvariable=low_var, width=6).grid(
+        row=0, column=1, padx=12, sticky="w")
+    tk.Label(frame, text="units", font=FONT_NORMAL,
+             bg=CLR_BG, fg=CLR_MUTED).grid(row=0, column=2, sticky="w")
+
+    err_var = tk.StringVar()
+    tk.Label(win, textvariable=err_var, font=FONT_SMALL,
+             fg=CLR_RED, bg=CLR_BG).pack(anchor="w", padx=24)
+
+    def save():
+        global LOW_STOCK_LEVEL
+        try:
+            v = int(low_var.get().strip())
+            if v < 1:
+                raise ValueError
+        except ValueError:
+            err_var.set("Must be a whole number ≥ 1")
+            return
+        LOW_STOCK_LEVEL = v
+        save_setting("low_stock_threshold", v)
+        notify_products_changed()
+        win.destroy()
+        messagebox.showinfo("Settings saved",
+            f"Low stock threshold set to {v} units.", parent=parent)
+
+    btn_row = tk.Frame(win, bg=CLR_BG)
+    btn_row.pack(pady=(4, 16))
+    ttk.Button(btn_row, text="Save", style="Success.TButton",
+               command=save).pack(side="left", padx=8)
+    ttk.Button(btn_row, text="Cancel",
+               command=win.destroy).pack(side="left", padx=8)
+
+
+tk.Button(
+    nav_bar, text="⚙ Settings",
+    command=open_settings,
+    relief="flat", bd=0,
+    padx=10, pady=11,
+    bg=CLR_DARK, fg="#9ca3af",
+    activebackground="#374151", activeforeground="white",
+    font=(FONT_FAMILY, 10),
+    cursor="hand2"
+).pack(side="right", padx=2)
+
+
 def _manual_sync():
     if not _SYNC_AVAILABLE:
         messagebox.showinfo("Cloud Sync",
@@ -4191,6 +4288,40 @@ def build_home():
     root.after(30000, tick)
 
 
+# ── Automatic daily backup ────────────────────────────────────────────────────
+def _auto_backup():
+    """Run a backup once per day. Keeps only the last 30 backups."""
+    try:
+        last = get_setting("last_auto_backup", "")
+        today = datetime.now().strftime("%Y-%m-%d")
+        if last == today:
+            return  # already backed up today
+        path = backup_database()
+        save_setting("last_auto_backup", today)
+        # Prune: keep only the 30 most recent backups
+        try:
+            files = sorted([
+                os.path.join(BACKUP_FOLDER, f)
+                for f in os.listdir(BACKUP_FOLDER)
+                if f.startswith("pos_backup_") and f.endswith(".db")
+            ])
+            for old in files[:-30]:
+                try:
+                    os.remove(old)
+                except OSError:
+                    pass
+        except OSError:
+            pass
+    except Exception:
+        pass
+
+
+def _schedule_daily_backup():
+    """Check every hour whether a daily backup is due."""
+    _auto_backup()
+    root.after(3_600_000, _schedule_daily_backup)  # 1 hour in ms
+
+
 def close_application(parent=None):
     parent = parent or root
     for entry in list(pages.values()):
@@ -4235,4 +4366,6 @@ if _SYNC_AVAILABLE:
     _update_sync_indicator()   # set initial label state
 
 go_to("home")
+# Start daily backup scheduler (runs first backup 30s after launch)
+root.after(30_000, _schedule_daily_backup)
 root.mainloop()

@@ -265,6 +265,7 @@ input:focus,select:focus,textarea:focus{
       🔄
     </button>
     <span class="cloud-pill" id="cpill">…</span>
+    <span id="last-sync-lbl" style="font-size:.72rem;color:#9ca3af;white-space:nowrap;padding:0 6px"></span>
     <form method="post" action="{{ url_for('logout') }}" style="margin:0">
       <button class="nav-signout" type="submit">Sign out</button>
     </form>
@@ -317,6 +318,12 @@ function refreshCloud(){
       p.textContent=m[d.cloud]||d.cloud;
       p.style.background=c[d.cloud]||'#374151';
       p.style.color='#f9fafb';
+      // show last synced time
+      var ls=document.getElementById('last-sync-lbl');
+      if(ls && d.last_sync && d.last_sync>0){
+        var t=new Date(d.last_sync*1000);
+        ls.textContent='Synced '+t.getHours().toString().padStart(2,'0')+':'+t.getMinutes().toString().padStart(2,'0')+':'+t.getSeconds().toString().padStart(2,'0');
+      }
     }).catch(function(){});
 }
 refreshCloud(); setInterval(refreshCloud,15000);
@@ -329,6 +336,8 @@ function forceRefresh(){
         {method:'POST',headers:{'Content-Type':'application/json'}})
     .then(r=>r.json()).then(d=>{
       if(btn){ btn.textContent='🔄'; btn.disabled=false; }
+      var ls=document.getElementById('last-sync-lbl');
+      if(ls && d.last_sync) ls.textContent='Synced '+d.last_sync;
       window.location.reload();
     }).catch(function(){
       if(btn){ btn.textContent='🔄'; btn.disabled=false; }

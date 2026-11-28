@@ -627,6 +627,7 @@ def reports():
         SELECT s.sale_id, substr(s.sale_date,1,10) AS date,
                substr(s.sale_date,12,5) AS time, s.total_amount,
                s.amount_received, s.change_given, s.status,
+               s.voided_at, s.void_reason,
                COALESCE(SUM(si.quantity),0) AS item_count,
                SUM(CASE WHEN si.unit_cost IS NOT NULL
                    THEN si.line_total - si.quantity*si.unit_cost END) AS profit,
@@ -636,6 +637,10 @@ def reports():
         GROUP BY s.sale_id ORDER BY s.sale_id DESC
     """, span)
 
+    completed_rows = [r for r in sales_rows if r["status"] == "completed"]
+    voided_rows    = [r for r in sales_rows if r["status"] == "voided"]
+    vo_total_rev   = sum(r["total_amount"] for r in voided_rows)
+
     return render_template("reports.html",
         today=today, dfrom=dfrom, dto=dto, group=group,
         yest=yest, week_start=week_start, month_start=month_start,
@@ -644,8 +649,9 @@ def reports():
         kpis=kpis, margin=margin,
         vo_count=vo.get("c",0), vo_amount=fm(vo.get("a")),
         prows=prows, trend=trend, top=top, low_rows=low_rows,
-        sales_rows=sales_rows, cur=cur,
-        fm=fm, fpct=fpct, cloud=cloud_status())
+        sales_rows=sales_rows, completed_rows=completed_rows,
+        voided_rows=voided_rows, vo_total_rev=fm(vo_total_rev),
+        cur=cur, fm=fm, fpct=fpct, cloud=cloud_status())
 
 
 # ── Inventory ─────────────────────────────────────────────────────────────────
@@ -931,7 +937,8 @@ def sale_delete_range():
 @login_required
 def api_status():
     return jsonify({"cloud": cloud_status(),
-                    "time": datetime.now().strftime("%H:%M:%S")})
+                    "time":  datetime.now().strftime("%H:%M:%S"),
+                    "last_sync": _sync_cache_ts})
 
 @app.route("/api/refresh", methods=["GET","POST"])
 @login_required
@@ -940,8 +947,11 @@ def api_refresh():
     global _sync_cache_ts
     _sync_cache_ts = 0.0
     sync_cloud_to_local()
+    import time as _t
+    last = datetime.fromtimestamp(_sync_cache_ts).strftime("%H:%M:%S") if _sync_cache_ts else "—"
     return jsonify({"ok": True, "cloud": cloud_status(),
-                    "time": datetime.now().strftime("%H:%M:%S")})
+                    "time": datetime.now().strftime("%H:%M:%S"),
+                    "last_sync": last})
 
 
 # ── Startup sync ──────────────────────────────────────────────────────────────

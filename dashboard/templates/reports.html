@@ -105,9 +105,30 @@
   {% endfor %}
 {% endwith %}
 
+<!-- Completed / Reversed sub-tabs -->
+<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+  <button onclick="showSalesTab('completed',this)"
+          id="stab-completed"
+          class="btn btn-blue btn-sm">
+    ✓ Completed ({{ completed_rows|length }})
+  </button>
+  <button onclick="showSalesTab('voided',this)"
+          id="stab-voided"
+          class="btn btn-grey btn-sm">
+    ↩ Reversed ({{ voided_rows|length }})
+  </button>
+  {% if voided_rows %}
+  <span style="font-size:.82rem;color:var(--red);font-weight:600">
+    Total reversed: {{ vo_total_rev }}
+  </span>
+  {% endif %}
+</div>
+
+<!-- Completed sales -->
+<div id="stab-panel-completed">
 <div class="card">
   <div class="card-hdr">
-    <h2>Sales in period</h2>
+    <h2>Completed Sales</h2>
     <span class="badge {{ 'b-green' if cloud=='online' else 'b-amber' }}">
       {{ '🟢 Cloud' if cloud=='online' else '🟡 Local' }}
     </span>
@@ -117,35 +138,26 @@
       <thead>
         <tr><th>#</th><th>Date</th><th>Time</th><th>Products</th>
           <th class="tr">Items</th><th class="tr">Total</th>
-          <th class="tr">Profit</th><th class="tc">Status</th>
-          <th class="tc">Actions</th></tr>
+          <th class="tr">Profit</th><th class="tc">Actions</th></tr>
       </thead>
       <tbody>
-      {% if not sales_rows %}
-        <tr><td colspan="9" class="tc" style="padding:24px;color:var(--muted)">
-          No sales in this period.</td></tr>
+      {% if not completed_rows %}
+        <tr><td colspan="8" class="tc" style="padding:24px;color:var(--muted)">No completed sales in this period.</td></tr>
       {% endif %}
-      {% for r in sales_rows %}
-      <tr class="{{ 'row-void' if r.status=='voided' else '' }}">
+      {% for r in completed_rows %}
+      <tr>
         <td class="mono">#{{ r.sale_id }}</td>
         <td>{{ r.date }}</td><td>{{ r.time }}</td>
         <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.82rem">
           {{ r.summary or '—' }}</td>
         <td class="tr">{{ r.item_count }}</td>
         <td class="tr"><strong>{{ fm(r.total_amount) }}</strong></td>
-        <td class="tr {{ '' if r.status=='voided' else ('green' if r.profit and r.profit>=0 else 'red') }}">
-          {{ '—' if r.status=='voided' else fm(r.profit) }}</td>
-        <td class="tc">
-          {% if r.status=='voided' %}<span class="badge b-red">↩ Reversed</span>
-          {% else %}<span class="badge b-green">✓ Done</span>{% endif %}
-        </td>
+        <td class="tr {{ 'green' if r.profit and r.profit>=0 else 'red' if r.profit is not none else '' }}">
+          {{ fm(r.profit) if r.profit is not none else '—' }}</td>
         <td class="tc" style="white-space:nowrap">
-          {% if r.status=='completed' %}
           <a href="{{ url_for('sale_reverse', sale_id=r.sale_id) }}"
              class="btn btn-sm"
              style="background:var(--row-low);color:var(--amber);margin:1px">↩ Reverse</a>
-          {% endif %}
-          <!-- Delete with stock option -->
           <button class="btn btn-sm"
                   style="background:var(--row-out);color:var(--red);margin:1px"
                   onclick="confirmDelete({{ r.sale_id }}, '{{ r.status }}', {{ r.total_amount }})">
@@ -157,6 +169,53 @@
       </tbody>
     </table>
   </div>
+</div>
+</div>
+
+<!-- Reversed/voided sales -->
+<div id="stab-panel-voided" style="display:none">
+<div class="card">
+  <div class="card-hdr">
+    <h2>Reversed Sales</h2>
+    {% if voided_rows %}
+    <span style="font-size:.85rem;color:var(--red);font-weight:700">
+      {{ voided_rows|length }} reversal{{ 's' if voided_rows|length!=1 }} — {{ vo_total_rev }} not counted in revenue
+    </span>
+    {% endif %}
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Date</th><th>Time</th><th>Products</th>
+          <th class="tr">Total</th><th>Reversed At</th><th>Reason</th>
+          <th class="tc">Actions</th></tr>
+      </thead>
+      <tbody>
+      {% if not voided_rows %}
+        <tr><td colspan="8" class="tc" style="padding:24px;color:var(--muted)">No reversed sales in this period.</td></tr>
+      {% endif %}
+      {% for r in voided_rows %}
+      <tr class="row-void">
+        <td class="mono">#{{ r.sale_id }}</td>
+        <td>{{ r.date }}</td><td>{{ r.time }}</td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.82rem">
+          {{ r.summary or '—' }}</td>
+        <td class="tr"><strong>{{ fm(r.total_amount) }}</strong></td>
+        <td style="font-size:.82rem">{{ r.voided_at[:16] if r.voided_at else '—' }}</td>
+        <td style="font-size:.82rem;color:var(--muted)">{{ r.void_reason or '—' }}</td>
+        <td class="tc">
+          <button class="btn btn-sm"
+                  style="background:var(--row-out);color:var(--red);margin:1px"
+                  onclick="confirmDelete({{ r.sale_id }}, '{{ r.status }}', {{ r.total_amount }})">
+            🗑 Delete
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 </div>
 
 <!-- Delete date range -->
@@ -359,6 +418,13 @@ function showTab(id, el) {
   document.getElementById('tab-'+id).style.display = 'block';
   document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('on'); });
   el.classList.add('on');
+}
+
+function showSalesTab(id, el) {
+  document.getElementById('stab-panel-completed').style.display = id==='completed' ? 'block' : 'none';
+  document.getElementById('stab-panel-voided').style.display    = id==='voided'    ? 'block' : 'none';
+  document.getElementById('stab-completed').className = 'btn btn-sm ' + (id==='completed' ? 'btn-blue' : 'btn-grey');
+  document.getElementById('stab-voided').className    = 'btn btn-sm ' + (id==='voided'    ? 'btn-blue' : 'btn-grey');
 }
 
 function confirmDelete(saleId, status, total) {
