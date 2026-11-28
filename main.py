@@ -955,6 +955,11 @@ def _on_sync_status_change():
     """Runs in sync thread — schedules UI update on main thread."""
     try:
         root.after(0, _update_sync_indicator)
+        # When sync completes successfully, refresh inventory/product lists
+        # so changes made on the dashboard appear on the shop PC immediately
+        st = _sync.get_status()
+        if st.get("state") == "ok":
+            root.after(0, notify_products_changed)
     except Exception:
         pass
 

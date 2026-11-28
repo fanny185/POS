@@ -159,6 +159,34 @@ def cloud_q(table, sb_params=None, local_sql=None, local_params=()):
     return q(local_sql, local_params) if local_sql else []
 
 
+def _push_product_to_supabase(prod_row):
+    """Immediately upsert one product to Supabase after a dashboard change."""
+    if not _SUPABASE_URL or not _SUPABASE_KEY:
+        return
+    try:
+        import requests as _req
+        _req.post(
+            f"{_SUPABASE_URL}/rest/v1/products",
+            json=[{
+                "product_id":    prod_row["product_id"],
+                "product_name":  prod_row["product_name"],
+                "quantity":      prod_row["quantity"],
+                "selling_price": prod_row["selling_price"],
+                "ordering_price":prod_row.get("ordering_price"),
+                "units_per_pack":prod_row.get("units_per_pack", 1),
+            }],
+            headers={
+                "apikey":        _SUPABASE_KEY,
+                "Authorization": f"Bearer {_SUPABASE_KEY}",
+                "Content-Type":  "application/json",
+                "Prefer":        "resolution=merge-duplicates",
+            },
+            timeout=8
+        )
+    except Exception:
+        pass
+
+
 def sync_cloud_to_local():
     """Pull ALL Supabase data into local SQLite so every query works fast.
 
@@ -707,6 +735,8 @@ def product_add():
                            (product_name,quantity,selling_price,
                             ordering_price,units_per_pack,synced)
                        VALUES (?,?,?,?,?,0)""",(name,qt,p,c,u))
+                new=q1("SELECT * FROM products WHERE product_name=? ORDER BY product_id DESC LIMIT 1",(name,))
+                if new: _push_product_to_supabase(new)
                 flash(f"✓ '{name}' added successfully.","success")
                 return redirect(url_for("inventory"))
     return render_template("product_form.html",
@@ -754,6 +784,8 @@ def product_edit(pid):
             if dup: error=f"Another product named '{name}' already exists (names are not case-sensitive)."
             else:
                 run("UPDATE products SET product_name=?,quantity=?,selling_price=?,ordering_price=?,units_per_pack=?,synced=0 WHERE product_id=?",(name,qt,p,c,u,pid))
+                updated=q1("SELECT * FROM products WHERE product_id=?",(pid,))
+                if updated: _push_product_to_supabase(updated)
                 flash(f"✓ '{name}' updated.","success")
                 return redirect(url_for("inventory"))
     return render_template("product_form.html",
@@ -783,6 +815,8 @@ def product_restock(pid):
                 except ValueError: error="Ordering price must be a valid non-negative number."
             if not error:
                 run("UPDATE products SET quantity=quantity+?,ordering_price=COALESCE(?,ordering_price),synced=0 WHERE product_id=?",(added,new_cost,pid))
+                updated=q1("SELECT * FROM products WHERE product_id=?",(pid,))
+                if updated: _push_product_to_supabase(updated)
                 flash(f"✓ Added {added} units to '{prod['product_name']}'. New stock: {prod['quantity']+added}.","success")
                 return redirect(url_for("inventory"))
         try:
